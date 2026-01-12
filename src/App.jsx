@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabaseClient'
-import { Coffee, Plus, Star, ArrowLeft, Bean, Droplets, Camera, Image as ImageIcon, Loader2, Flame, Trash2, Edit3, Search } from 'lucide-react'
+import { Coffee, Plus, Star, ArrowLeft, Bean, Droplets, Camera, Image as ImageIcon, Loader2, Flame, Trash2, Edit3, Search, Heart } from 'lucide-react'
 
 const theme = {
   primary: '#6F4E37',
@@ -20,7 +20,12 @@ export default function App() {
   useEffect(() => { fetchReviews() }, [])
 
   async function fetchReviews() {
-    const { data } = await supabase.from('reviews').select('*').order('created_at', { ascending: false })
+    // Ordena por favoritos primeiro, depois por data de criação
+    const { data } = await supabase
+      .from('reviews')
+      .select('*')
+      .order('is_favorite', { ascending: false })
+      .order('created_at', { ascending: false })
     if (data) setReviews(data)
   }
 
@@ -30,6 +35,14 @@ export default function App() {
     r.origin?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     r.notes?.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  const handleToggleFavorite = async (id, currentStatus) => {
+    const { error } = await supabase
+      .from('reviews')
+      .update({ is_favorite: !currentStatus })
+      .eq('id', id)
+    if (!error) fetchReviews()
+  }
 
   const handleEdit = (review) => {
     setCurrentReview(review)
@@ -84,7 +97,13 @@ export default function App() {
               </p>
             ) : (
               filteredReviews.map(r => (
-                <ReviewCard key={r.id} review={r} onEdit={() => handleEdit(r)} onDelete={() => handleDelete(r.id)} />
+                <ReviewCard 
+                  key={r.id} 
+                  review={r} 
+                  onEdit={() => handleEdit(r)} 
+                  onDelete={() => handleDelete(r.id)} 
+                  onToggleFavorite={() => handleToggleFavorite(r.id, r.is_favorite)}
+                />
               ))
             )}
           </div>
@@ -101,12 +120,20 @@ export default function App() {
   )
 }
 
-function ReviewCard({ review, onEdit, onDelete }) {
+function ReviewCard({ review, onEdit, onDelete, onToggleFavorite }) {
   return (
     <div style={{ background: theme.card, borderRadius: '25px', overflow: 'hidden', boxShadow: '0 8px 20px rgba(0,0,0,0.04)', marginBottom: '5px', position: 'relative' }}>
       {review.image_url && <img src={review.image_url} alt="Café" style={{ width: '100%', height: '250px', objectFit: 'cover' }} />}
       
-      <div style={{ position: 'absolute', top: '15px', right: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+      {/* Botão de Favorito (Coração) no canto superior esquerdo da imagem/card */}
+      <button 
+        onClick={onToggleFavorite}
+        style={{ position: 'absolute', top: '15px', left: '15px', background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', zIndex: 10 }}
+      >
+        <Heart size={18} fill={review.is_favorite ? "#d9534f" : "none"} color={review.is_favorite ? "#d9534f" : theme.secondary} />
+      </button>
+
+      <div style={{ position: 'absolute', top: '15px', right: '15px', display: 'flex', alignItems: 'center', gap: '10px', zIndex: 10 }}>
         <div style={{ color: theme.accent, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.9)', padding: '6px 12px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
           {review.rating} <Star size={14} fill={theme.accent} stroke="none" />
         </div>
@@ -133,26 +160,8 @@ function ReviewCard({ review, onEdit, onDelete }) {
         </div>
 
         {review.notes && (
-          <div style={{ 
-            marginTop: '18px', 
-            padding: '12px', 
-            background: '#F9F9F9', 
-            borderRadius: '15px', 
-            borderLeft: `3px solid ${theme.accent}`,
-            // Correção para o Wrap:
-            boxSizing: 'border-box',
-            width: '100%',
-            overflow: 'hidden'
-          }}>
-            <span style={{ 
-              fontSize: '0.85rem', 
-              fontStyle: 'italic',
-              display: 'block',
-              whiteSpace: 'pre-wrap', 
-              wordBreak: 'break-word',
-              overflowWrap: 'break-word',
-              lineHeight: '1.4'
-            }}>
+          <div style={{ marginTop: '18px', padding: '12px', background: '#F9F9F9', borderRadius: '15px', borderLeft: `3px solid ${theme.accent}`, boxSizing: 'border-box', width: '100%', overflow: 'hidden' }}>
+            <span style={{ fontSize: '0.85rem', fontStyle: 'italic', display: 'block', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', lineHeight: '1.4' }}>
               "{review.notes}"
             </span>
           </div>
@@ -163,7 +172,7 @@ function ReviewCard({ review, onEdit, onDelete }) {
 }
 
 function ReviewForm({ mode, initialData, onSave, onCancel }) {
-  const [form, setForm] = useState(initialData || { coffee_name: '', brand: '', origin: '', brew_method: 'Coado (V60/Melitta)', roast_level: 'Média', rating: 5, notes: '', image_url: '', acidity: 3, body: 3 })
+  const [form, setForm] = useState(initialData || { coffee_name: '', brand: '', origin: '', brew_method: 'Coado (V60/Melitta)', roast_level: 'Média', rating: 5, notes: '', image_url: '', acidity: 3, body: 3, is_favorite: false })
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef(null)
   const cameraInputRef = useRef(null)
@@ -232,6 +241,13 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
 
       <label style={labelStyle}>ORIGEM</label>
       <input style={inputStyle} value={form.origin} onChange={e => setForm({...form, origin: e.target.value})} />
+
+      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '15px' }}>
+        <label style={{ ...labelStyle, marginBottom: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <input type="checkbox" checked={form.is_favorite} onChange={e => setForm({...form, is_favorite: e.target.checked})} style={{ width: '18px', height: '18px', accentColor: theme.primary }} />
+          Marcar como Favorito ❤️
+        </label>
+      </div>
 
       <div style={{ display: 'flex', gap: '12px' }}>
         <div style={{ flex: 1 }}>
