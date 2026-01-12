@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabaseClient'
 import { 
-  Coffee, Plus, Star, ArrowLeft, Bean, Droplets, Camera, 
-  Image as ImageIcon, Loader2, Flame, Trash2, Edit3, Search, 
-  Heart, LayoutGrid, BarChart3, BookOpen, Clock, Calculator, ChevronRight, Play, Pause, RotateCcw
+  Plus, Star, ArrowLeft, Bean, Droplets, Camera, 
+  Loader2, Flame, Trash2, Edit3, Search, 
+  Heart, LayoutGrid, BarChart3, BookOpen, Clock, Coffee, ChevronRight, Play, Pause, RotateCcw
 } from 'lucide-react'
 
 const theme = {
@@ -212,17 +212,34 @@ function BrewToolsTab() {
 }
 
 function StatsTab({ reviews }) {
+  const total = reviews.length;
+  const favs = reviews.filter(r => r.is_favorite).length;
+  const avgRating = total > 0 ? (reviews.reduce((acc, r) => acc + Number(r.rating), 0) / total).toFixed(1) : 0;
+  const methods = reviews.reduce((acc, r) => { acc[r.brew_method] = (acc[r.brew_method] || 0) + 1; return acc; }, {});
+  const topMethod = Object.entries(methods).sort((a, b) => b[1] - a[1])[0]?.[0] || "---";
+
   return (
     <div>
-      <h2 style={{ fontSize: '1.3rem', color: theme.primary, marginBottom: '20px' }}>Estatísticas</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-        <div style={{ background: 'white', padding: '20px', borderRadius: '20px', textAlign: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.03)' }}>
+      <h2 style={{ fontSize: '1.5rem', color: theme.primary, marginBottom: '20px', fontWeight: '800' }}>O Seu Perfil</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '25px' }}>
+        <div style={{ background: 'white', padding: '20px', borderRadius: '25px', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
           <span style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>TOTAL</span>
-          <h2 style={{ margin: '5px 0' }}>{reviews.length}</h2>
+          <h2 style={{ margin: '10px 0 0 0', fontSize: '1.8rem' }}>{total}</h2>
         </div>
-        <div style={{ background: 'white', padding: '20px', borderRadius: '20px', textAlign: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.03)' }}>
-          <span style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>FAVORITOS</span>
-          <h2 style={{ margin: '5px 0', color: theme.accent }}>{reviews.filter(r => r.is_favorite).length}</h2>
+        <div style={{ background: 'white', padding: '20px', borderRadius: '25px', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+          <span style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>MÉDIA</span>
+          <h2 style={{ margin: '10px 0 0 0', fontSize: '1.8rem', color: theme.accent }}>{avgRating} <Star size={18} fill={theme.accent} stroke="none" /></h2>
+        </div>
+      </div>
+      <div style={{ background: 'white', padding: '25px', borderRadius: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+        <h3 style={{ fontSize: '1rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}><Coffee size={18} color={theme.primary} /> Preferências</h3>
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}><span>Método Favorito:</span><span style={{ fontWeight: 'bold' }}>{topMethod}</span></div>
+          <div style={{ width: '100%', height: '8px', background: '#F0F0F0', borderRadius: '10px' }}><div style={{ width: total > 0 ? '75%' : '0%', height: '100%', background: theme.primary, borderRadius: '10px' }}></div></div>
+        </div>
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}><span>Taxa de Favoritos:</span><span style={{ fontWeight: 'bold' }}>{total > 0 ? Math.round((favs/total)*100) : 0}%</span></div>
+          <div style={{ width: '100%', height: '8px', background: '#F0F0F0', borderRadius: '10px' }}><div style={{ width: total > 0 ? `${(favs/total)*100}%` : '0%', height: '100%', background: '#d9534f', borderRadius: '10px' }}></div></div>
         </div>
       </div>
     </div>
