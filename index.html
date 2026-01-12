@@ -2,7 +2,8 @@
 <html lang="pt-br">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     
     <title>Coffee Journal</title>
@@ -23,11 +24,10 @@
       body {
         margin: 0;
         padding: 0;
-        background-color: #FDFBF7; /* Cor de fundo definida no tema */
+        background-color: #FDFBF7;
         font-family: 'Inter', sans-serif;
         -webkit-tap-highlight-color: transparent;
       }
-      /* Previne o scroll elástico no iOS para parecer mais um App */
       html, body {
         overflow-x: hidden;
         height: 100%;
@@ -41,8 +41,8 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {
-            console.log('SW registration failed');
+          navigator.serviceWorker.register('/sw.js').catch((err) => {
+            console.log('Service Worker registration failed: ', err);
           });
         });
       }
