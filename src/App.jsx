@@ -106,7 +106,6 @@ function NavButton({ icon, label, active, onClick }) {
   )
 }
 
-// --- ABA HOME (Reviews) ---
 function HomeTab({ reviews, searchTerm, setSearchTerm, onEdit, onDelete, onToggleFavorite }) {
   return (
     <>
@@ -164,7 +163,6 @@ function ReviewCard({ review, onEdit, onDelete, onToggleFavorite }) {
   )
 }
 
-// --- ABA DESPENSA (Inventário + Wishlist) ---
 function PantryTab() {
   const [items, setItems] = useState([]);
   const [wishlist, setWishlist] = useState([]);
@@ -212,7 +210,7 @@ function PantryTab() {
       <section>
         <h2 style={{ fontSize: '1.3rem', color: theme.primary, marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}><Package size={22}/> Estoque de Grãos</h2>
         <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-          <input style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none' }} placeholder="Novo café na despensa..." value={newItemName} onChange={e => setNewItemName(e.target.value)} />
+          <input style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none' }} placeholder="Novo café..." value={newItemName} onChange={e => setNewItemName(e.target.value)} />
           <button onClick={addInventory} style={{ background: theme.primary, color: 'white', border: 'none', padding: '12px', borderRadius: '12px' }}><Plus/></button>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -226,7 +224,8 @@ function PantryTab() {
                 <div style={{ width: `${(item.weight_current / item.weight_total) * 100}%`, height: '100%', background: theme.secondary, borderRadius: '10px' }}></div>
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
-                <button onClick={() => updateWeight(item.id, item.weight_current - 15)} style={{ flex: 1, padding: '6px', borderRadius: '8px', border: '1px solid #EEE', background: 'none', fontSize: '0.7rem' }}>-15g (1 dose)</button>
+                {/* AJUSTADO PARA 18G */}
+                <button onClick={() => updateWeight(item.id, item.weight_current - 18)} style={{ flex: 1, padding: '6px', borderRadius: '8px', border: '1px solid #EEE', background: 'none', fontSize: '0.7rem' }}>-18g (1 dose)</button>
                 <button onClick={async () => { if(confirm("Remover?")) { await supabase.from('inventory').delete().eq('id', item.id); fetchPantry(); } }} style={{ padding: '6px', borderRadius: '8px', border: 'none', background: '#f8d7da', color: '#721c24' }}><Trash2 size={14}/></button>
               </div>
             </div>
@@ -237,7 +236,7 @@ function PantryTab() {
       <section style={{ background: '#FFF7ED', padding: '20px', borderRadius: '25px', border: '1px dashed #ECB159' }}>
         <h2 style={{ fontSize: '1.3rem', color: theme.primary, marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}><ShoppingCart size={22}/> Lista de Desejos</h2>
         <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-          <input style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #ECB15944', outline: 'none' }} placeholder="Café ou acessório..." value={wishInput} onChange={e => setWishInput(e.target.value)} />
+          <input style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #ECB15944', outline: 'none' }} placeholder="Desejo..." value={wishInput} onChange={e => setWishInput(e.target.value)} />
           <button onClick={addWish} style={{ background: theme.accent, color: 'white', border: 'none', padding: '10px', borderRadius: '10px' }}><Plus/></button>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -253,9 +252,9 @@ function PantryTab() {
   )
 }
 
-// --- ABA PREPARO (Timer + Calculadora) ---
 function BrewToolsTab() {
-  const [coffee, setCoffee] = useState(15);
+  {/* INICIA AGORA COM 18G */}
+  const [coffee, setCoffee] = useState(18);
   const [ratio, setRatio] = useState(15);
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
@@ -302,7 +301,6 @@ function BrewToolsTab() {
   );
 }
 
-// --- ABA STATS ---
 function StatsTab({ reviews }) {
   const total = reviews.length;
   const favs = reviews.filter(r => r.is_favorite).length;
@@ -338,7 +336,6 @@ function StatsTab({ reviews }) {
   )
 }
 
-// --- FORMULÁRIO (ADD/EDIT) ---
 function ReviewForm({ mode, initialData, onSave, onCancel }) {
   const [form, setForm] = useState(initialData || { 
     coffee_name: '', brand: '', origin: '', brew_method: 'Coado (V60/Melitta)', 
