@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabaseClient'
-import { Coffee, Plus, Star, ArrowLeft, Bean, Droplets, Camera, Loader2 } from 'lucide-react'
+import { Coffee, Plus, Star, ArrowLeft, Bean, Droplets, Camera, Image as ImageIcon, Loader2, Flame } from 'lucide-react'
 
 const theme = {
   primary: '#6F4E37',
@@ -51,10 +51,8 @@ export default function App() {
 
 function ReviewCard({ review }) {
   return (
-    <div style={{ background: theme.card, borderRadius: '20px', overflow: 'hidden', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-      {review.image_url && (
-        <img src={review.image_url} alt="Café" style={{ width: '100%', height: '250px', objectFit: 'cover' }} />
-      )}
+    <div style={{ background: theme.card, borderRadius: '20px', overflow: 'hidden', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', marginBottom: '10px' }}>
+      {review.image_url && <img src={review.image_url} alt="Café" style={{ width: '100%', height: '250px', objectFit: 'cover' }} />}
       <div style={{ padding: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <h3 style={{ margin: 0 }}>{review.coffee_name}</h3>
@@ -63,40 +61,40 @@ function ReviewCard({ review }) {
           </div>
         </div>
         <p style={{ margin: '5px 0', color: theme.secondary, fontSize: '0.9rem' }}>{review.brand} • {review.origin}</p>
-        <div style={{ display: 'flex', gap: '15px', marginTop: '10px', fontSize: '0.8rem', opacity: 0.8 }}>
-          <span><Droplets size={12}/> Acidez: {review.acidity}</span>
-          <span><Bean size={12}/> Corpo: {review.body}</span>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '15px', fontSize: '0.8rem', opacity: 0.8 }}>
+          <span><Droplets size={12}/> Acidez: {review.acidity}/5</span>
+          <span><Bean size={12}/> Corpo: {review.body}/5</span>
+          <span><Flame size={12}/> Torra: {review.roast_level}</span>
+          <span><Coffee size={12}/> {review.brew_method}</span>
         </div>
-        {review.notes && <p style={{ marginTop: '15px', fontSize: '0.9rem', fontStyle: 'italic' }}>"{review.notes}"</p>}
+
+        {review.notes && <p style={{ marginTop: '15px', fontSize: '0.9rem', fontStyle: 'italic', borderLeft: `2px solid ${theme.accent}`, paddingLeft: '10px' }}>"{review.notes}"</p>}
       </div>
     </div>
   )
 }
 
 function AddReview({ onSave, onCancel }) {
-  const [form, setForm] = useState({ coffee_name: '', brand: '', origin: '', brew_method: 'V60', rating: 5, notes: '', image_url: '', acidity: 3, body: 3 })
+  const [form, setForm] = useState({ coffee_name: '', brand: '', origin: '', brew_method: 'V60', roast_level: 'Média', rating: 5, notes: '', image_url: '', acidity: 3, body: 3 })
   const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef(null)
+  const cameraInputRef = useRef(null)
 
   async function handleFileUpload(e) {
     try {
-      setUploading(true)
       const file = e.target.files[0]
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Math.random()}.${fileExt}`
-      const filePath = `${fileName}`
-
-      // Upload para o bucket 'coffee-images'
-      let { error: uploadError } = await supabase.storage
-        .from('coffee-images')
-        .upload(filePath, file)
-
+      if (!file) return
+      setUploading(true)
+      const fileName = `${Math.random()}.${file.name.split('.').pop()}`
+      
+      let { error: uploadError } = await supabase.storage.from('coffee-images').upload(fileName, file)
       if (uploadError) throw uploadError
 
-      // Pega a URL pública
-      const { data } = supabase.storage.from('coffee-images').getPublicUrl(filePath)
+      const { data } = supabase.storage.from('coffee-images').getPublicUrl(fileName)
       setForm({ ...form, image_url: data.publicUrl })
     } catch (error) {
-      alert('Erro no upload da imagem!')
+      alert('Erro no upload!')
     } finally {
       setUploading(false)
     }
@@ -106,52 +104,82 @@ function AddReview({ onSave, onCancel }) {
     e.preventDefault()
     const { error } = await supabase.from('reviews').insert([form])
     if (!error) onSave()
-    else alert('Erro ao salvar review')
+    else alert('Erro ao salvar')
   }
 
   const inputStyle = { width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '12px', border: '1px solid #ddd', boxSizing: 'border-box' }
+  const labelStyle = { fontSize: '0.8rem', fontWeight: 'bold', display: 'block', marginBottom: '5px', color: theme.secondary }
 
   return (
-    <form onSubmit={handleSubmit} style={{ background: 'white', padding: '20px', borderRadius: '24px' }}>
+    <form onSubmit={handleSubmit} style={{ background: 'white', padding: '20px', borderRadius: '24px', boxShadow: '0 10px 25px rgba(0,0,0,0.05)' }}>
       <button type="button" onClick={onCancel} style={{ background: 'none', border: 'none', marginBottom: '15px', cursor: 'pointer' }}><ArrowLeft /></button>
       
-      <div style={{ marginBottom: '20px', textAlign: 'center' }}>
-        <label style={{ 
-          width: '100%', height: '150px', border: '2px dashed #ddd', borderRadius: '15px', 
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', overflow: 'hidden', position: 'relative'
-        }}>
-          {form.image_url ? (
-            <img src={form.image_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          ) : (
-            <>
-              {uploading ? <Loader2 className="animate-spin" /> : <Camera size={30} color={theme.secondary} />}
-              <span style={{ fontSize: '0.8rem', color: theme.secondary, marginTop: '5px' }}>Tirar foto do café</span>
-            </>
-          )}
-          <input type="file" accept="image/*" capture="environment" onChange={handleFileUpload} style={{ display: 'none' }} />
-        </label>
+      {/* Seção de Foto */}
+      <div style={{ marginBottom: '25px' }}>
+        <div style={{ width: '100%', height: '180px', background: '#f8f8f8', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '2px dashed #eee', marginBottom: '10px' }}>
+          {form.image_url ? <img src={form.image_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : 
+           uploading ? <Loader2 className="animate-spin" /> : <Coffee size={40} color="#ddd" />}
+        </div>
+        
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button type="button" onClick={() => cameraInputRef.current.click()} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '10px', border: `1px solid ${theme.primary}`, background: 'none', color: theme.primary, fontWeight: 'bold', cursor: 'pointer' }}>
+            <Camera size={18} /> Tirar Foto
+          </button>
+          <button type="button" onClick={() => fileInputRef.current.click()} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '10px', border: `1px solid ${theme.primary}`, background: 'none', color: theme.primary, fontWeight: 'bold', cursor: 'pointer' }}>
+            <ImageIcon size={18} /> Galeria
+          </button>
+        </div>
+        <input type="file" accept="image/*" capture="environment" ref={cameraInputRef} style={{ display: 'none' }} onChange={handleFileUpload} />
+        <input type="file" accept="image/*" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload} />
       </div>
 
-      <label style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>NOME DO CAFÉ</label>
-      <input style={inputStyle} required onChange={e => setForm({...form, coffee_name: e.target.value})} />
+      <label style={labelStyle}>NOME DO CAFÉ</label>
+      <input style={inputStyle} required placeholder="Ex: Catuaí Vermelho" onChange={e => setForm({...form, coffee_name: e.target.value})} />
 
       <div style={{ display: 'flex', gap: '10px' }}>
         <div style={{ flex: 1 }}>
-          <label style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>MARCA</label>
-          <input style={inputStyle} onChange={e => setForm({...form, brand: e.target.value})} />
+          <label style={labelStyle}>MARCA</label>
+          <input style={inputStyle} placeholder="Ex: Orfeu" onChange={e => setForm({...form, brand: e.target.value})} />
         </div>
         <div style={{ flex: 1 }}>
-          <label style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>NOTA (1-5)</label>
-          <input type="number" min="1" max="5" style={inputStyle} value={form.rating} onChange={e => setForm({...form, rating: e.target.value})} />
+          <label style={labelStyle}>ORIGEM</label>
+          <input style={inputStyle} placeholder="Ex: Minas" onChange={e => setForm({...form, origin: e.target.value})} />
         </div>
       </div>
 
-      <label style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>NOTAS SENSORIAIS</label>
-      <textarea style={{ ...inputStyle, height: '80px' }} onChange={e => setForm({...form, notes: e.target.value})}></textarea>
+      <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ flex: 1 }}>
+          <label style={labelStyle}>MÉTODO</label>
+          <select style={inputStyle} onChange={e => setForm({...form, brew_method: e.target.value})}>
+            <option>V60</option><option>Espresso</option><option>Prensa</option><option>Aeropress</option><option>Moka</option>
+          </select>
+        </div>
+        <div style={{ flex: 1 }}>
+          <label style={labelStyle}>TORRA</label>
+          <select style={inputStyle} onChange={e => setForm({...form, roast_level: e.target.value})}>
+            <option>Clara</option><option>Média</option><option>Escura</option>
+          </select>
+        </div>
+      </div>
 
-      <button type="submit" disabled={uploading} style={{ width: '100%', background: theme.primary, color: 'white', border: 'none', padding: '15px', borderRadius: '12px', fontWeight: 'bold' }}>
-        {uploading ? 'Enviando imagem...' : 'Salvar Avaliação'}
+      <div style={{ marginBottom: '15px' }}>
+        <label style={labelStyle}>ACIDEZ: {form.acidity}</label>
+        <input type="range" min="1" max="5" style={{ width: '100%' }} value={form.acidity} onChange={e => setForm({...form, acidity: e.target.value})} />
+      </div>
+
+      <div style={{ marginBottom: '15px' }}>
+        <label style={labelStyle}>CORPO: {form.body}</label>
+        <input type="range" min="1" max="5" style={{ width: '100%' }} value={form.body} onChange={e => setForm({...form, body: e.target.value})} />
+      </div>
+
+      <label style={labelStyle}>NOTA GERAL (1-5)</label>
+      <input type="number" min="1" max="5" style={inputStyle} value={form.rating} onChange={e => setForm({...form, rating: e.target.value})} />
+
+      <label style={labelStyle}>NOTAS SENSORIAIS</label>
+      <textarea style={{ ...inputStyle, height: '70px' }} placeholder="Ex: Notas de nozes e mel..." onChange={e => setForm({...form, notes: e.target.value})}></textarea>
+
+      <button type="submit" disabled={uploading} style={{ width: '100%', background: theme.primary, color: 'white', border: 'none', padding: '16px', borderRadius: '15px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer' }}>
+        {uploading ? 'Salvando Imagem...' : 'Salvar Review'}
       </button>
     </form>
   )
