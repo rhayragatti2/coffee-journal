@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabaseClient'
-import { Coffee, Plus, Star, ArrowLeft, Bean, Droplets, Camera, Image as ImageIcon, Loader2, Flame, Trash2, Edit3, Search, Heart } from 'lucide-react'
+import { Coffee, Plus, Star, ArrowLeft, Bean, Droplets, Camera, Image as ImageIcon, Loader2, Flame, Trash2, Edit3, Search, Heart, Award } from 'lucide-react'
 
 const theme = {
   primary: '#6F4E37',
@@ -49,18 +49,22 @@ export default function App() {
   }
 
   const handleDelete = async (id) => {
-    if (window.confirm("Deseja realmente excluir este review?")) {
+    if (window.confirm("Deseja realmente eliminar este registo?")) {
       const { error } = await supabase.from('reviews').delete().eq('id', id)
       if (!error) fetchReviews()
-      else alert("Erro ao excluir")
+      else alert("Erro ao eliminar")
     }
   }
+
+  // Estatísticas para o topo
+  const totalReviews = reviews.length
+  const favoriteCount = reviews.filter(r => r.is_favorite).length
 
   return (
     <div style={{ backgroundColor: theme.bg, minHeight: '100vh', fontFamily: "sans-serif", color: theme.text }}>
       <div style={{ maxWidth: '500px', margin: '0 auto', padding: '20px' }}>
         
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
           <h1 style={{ fontSize: '1.4rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px', color: theme.primary }}>
             <Coffee size={28} /> COFFEE JOURNAL
           </h1>
@@ -72,41 +76,55 @@ export default function App() {
         </header>
 
         {view === 'list' && (
-          <div style={{ position: 'relative', marginBottom: '25px' }}>
-            <Search size={18} color={theme.secondary} style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)' }} />
-            <input 
-              type="text" 
-              placeholder="Buscar por grão, marca ou notas..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ 
-                width: '100%', padding: '12px 12px 12px 45px', borderRadius: '15px', border: 'none', 
-                backgroundColor: 'white', boxShadow: '0 4px 10px rgba(0,0,0,0.03)', boxSizing: 'border-box',
-                fontSize: '0.9rem', outline: 'none'
-              }} 
-            />
-          </div>
+          <>
+            {/* Painel de Estatísticas Rápido */}
+            <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
+               <div style={{ flex: 1, background: 'rgba(111, 78, 55, 0.05)', padding: '12px', borderRadius: '15px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 'bold', color: theme.secondary, textTransform: 'uppercase' }}>Total de Cafés</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: '800', color: theme.primary }}>{totalReviews}</div>
+               </div>
+               <div style={{ flex: 1, background: 'rgba(236, 177, 89, 0.1)', padding: '12px', borderRadius: '15px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 'bold', color: theme.secondary, textTransform: 'uppercase' }}>Favoritos</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: '800', color: theme.accent }}>{favoriteCount}</div>
+               </div>
+            </div>
+
+            <div style={{ position: 'relative', marginBottom: '25px' }}>
+              <Search size={18} color={theme.secondary} style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)' }} />
+              <input 
+                type="text" 
+                placeholder="Procurar grão, marca ou notas..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ 
+                  width: '100%', padding: '12px 12px 12px 45px', borderRadius: '15px', border: 'none', 
+                  backgroundColor: 'white', boxShadow: '0 4px 10px rgba(0,0,0,0.03)', boxSizing: 'border-box',
+                  fontSize: '0.9rem', outline: 'none'
+                }} 
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {filteredReviews.length === 0 ? (
+                <p style={{ textAlign: 'center', opacity: 0.6, marginTop: '20px' }}>
+                  {searchTerm ? 'Nenhum café encontrado.' : 'Comece a registar as suas experiências!'}
+                </p>
+              ) : (
+                filteredReviews.map(r => (
+                  <ReviewCard 
+                    key={r.id} 
+                    review={r} 
+                    onEdit={() => handleEdit(r)} 
+                    onDelete={() => handleDelete(r.id)} 
+                    onToggleFavorite={() => handleToggleFavorite(r.id, r.is_favorite)}
+                  />
+                ))
+              )}
+            </div>
+          </>
         )}
 
-        {view === 'list' ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {filteredReviews.length === 0 ? (
-              <p style={{ textAlign: 'center', opacity: 0.6, marginTop: '20px' }}>
-                {searchTerm ? 'Nenhum café encontrado.' : 'Nenhum café registrado.'}
-              </p>
-            ) : (
-              filteredReviews.map(r => (
-                <ReviewCard 
-                  key={r.id} 
-                  review={r} 
-                  onEdit={() => handleEdit(r)} 
-                  onDelete={() => handleDelete(r.id)} 
-                  onToggleFavorite={() => handleToggleFavorite(r.id, r.is_favorite)}
-                />
-              ))
-            )}
-          </div>
-        ) : (
+        {view !== 'list' && (
           <ReviewForm 
             mode={view} 
             initialData={currentReview} 
@@ -126,7 +144,6 @@ function ReviewCard({ review, onEdit, onDelete, onToggleFavorite }) {
     <div style={{ background: theme.card, borderRadius: '25px', overflow: 'hidden', boxShadow: '0 8px 20px rgba(0,0,0,0.04)', marginBottom: '5px', position: 'relative' }}>
       {hasImage && <img src={review.image_url} alt="Café" style={{ width: '100%', height: '250px', objectFit: 'cover' }} />}
       
-      {/* Container de Ações: Muda de Absolute para Relative se não tiver imagem */}
       <div style={{ 
         position: hasImage ? 'absolute' : 'relative', 
         top: hasImage ? '15px' : '0', 
@@ -161,14 +178,7 @@ function ReviewCard({ review, onEdit, onDelete, onToggleFavorite }) {
       </div>
 
       <div style={{ padding: hasImage ? '20px' : '10px 20px 20px 20px' }}>
-        {/* Título: Se não tiver imagem, ganha um padding left para não encostar no coração se ele fosse absoluto, 
-            mas aqui tratamos com o flexbox acima para garantir separação. */}
-        <h3 style={{ 
-          margin: 0, 
-          fontSize: '1.2rem', 
-          wordBreak: 'break-word',
-          marginTop: hasImage ? '0' : '10px'
-        }}>
+        <h3 style={{ margin: 0, fontSize: '1.2rem', wordBreak: 'break-word', marginTop: hasImage ? '0' : '5px' }}>
           {review.coffee_name}
         </h3>
         <p style={{ margin: '4px 0', color: theme.secondary, fontSize: '0.9rem', fontWeight: '500', wordBreak: 'break-word' }}>{review.brand} • {review.origin}</p>
@@ -227,7 +237,7 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
       error = addError
     }
     if (!error) onSave()
-    else alert('Erro ao salvar')
+    else alert('Erro ao guardar')
   }
 
   const inputStyle = { width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '12px', border: '1px solid #eee', boxSizing: 'border-box', backgroundColor: '#F9F9F9' }
@@ -244,7 +254,7 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button type="button" onClick={() => cameraInputRef.current.click()} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '12px', border: `1px solid ${theme.primary}`, background: 'none', color: theme.primary, fontWeight: 'bold', fontSize: '0.8rem' }}>
-            <Camera size={16} /> Câmera
+            <Camera size={16} /> Câmara
           </button>
           <button type="button" onClick={() => fileInputRef.current.click()} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '12px', border: `1px solid ${theme.primary}`, background: 'none', color: theme.primary, fontWeight: 'bold', fontSize: '0.8rem' }}>
             <ImageIcon size={16} /> Galeria
@@ -298,7 +308,7 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
       <textarea style={{ ...inputStyle, height: '80px', resize: 'none' }} value={form.notes} onChange={e => setForm({...form, notes: e.target.value})}></textarea>
 
       <button type="submit" disabled={uploading} style={{ width: '100%', background: theme.primary, color: 'white', border: 'none', padding: '16px', borderRadius: '15px', fontWeight: 'bold', cursor: 'pointer' }}>
-        {uploading ? 'Aguarde...' : mode === 'edit' ? 'Salvar Alterações' : 'Salvar Review'}
+        {uploading ? 'A aguardar...' : mode === 'edit' ? 'Guardar Alterações' : 'Guardar Review'}
       </button>
     </form>
   )
