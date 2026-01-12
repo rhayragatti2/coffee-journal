@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient'
 import { 
   Plus, Star, ArrowLeft, Bean, Droplets, Camera, 
   Loader2, Flame, Trash2, Edit3, Search, 
-  Heart, LayoutGrid, BarChart3, Clock, Coffee, ChevronRight, Play, Pause, RotateCcw, Package, ShoppingCart, CheckCircle2
+  Heart, LayoutGrid, BarChart3, Clock, Coffee, Package, ShoppingCart, CheckCircle2, Pause, Play, RotateCcw
 } from 'lucide-react'
 
 const theme = {
@@ -71,22 +71,24 @@ export default function App() {
         )}
       </div>
 
-      {/* NAVEGAÇÃO INFERIOR */}
+      {/* NAVEGAÇÃO INFERIOR CORRIGIDA E ALINHADA */}
       {view === 'list' && (
         <nav style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0, height: '75px',
-          backgroundColor: '#FFF', display: 'flex', justifyContent: 'space-around',
+          position: 'fixed', bottom: 0, left: 0, right: 0, height: '80px',
+          backgroundColor: '#FFF', display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)',
           alignItems: 'center', boxShadow: '0 -5px 20px rgba(0,0,0,0.05)', zIndex: 1000,
           paddingBottom: 'env(safe-area-inset-bottom)', borderTop: '1px solid #EEE'
         }}>
           <NavButton icon={<LayoutGrid size={22}/>} label="Início" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
           <NavButton icon={<BarChart3 size={22}/>} label="Stats" active={activeTab === 'stats'} onClick={() => setActiveTab('stats')} />
           
-          <button onClick={() => setView('add')} style={{
-            width: '56px', height: '56px', borderRadius: '50%', backgroundColor: theme.primary,
-            color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            marginTop: '-35px', boxShadow: `0 8px 15px ${theme.primary}44`, cursor: 'pointer'
-          }}><Plus size={28} /></button>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <button onClick={() => setView('add')} style={{
+              width: '56px', height: '56px', borderRadius: '50%', backgroundColor: theme.primary,
+              color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              marginTop: '-35px', boxShadow: `0 8px 15px ${theme.primary}44`, cursor: 'pointer'
+            }}><Plus size={28} /></button>
+          </div>
 
           <NavButton icon={<Clock size={22}/>} label="Preparo" active={activeTab === 'brew'} onClick={() => setActiveTab('brew')} />
           <NavButton icon={<Package size={22}/>} label="Despensa" active={activeTab === 'pantry'} onClick={() => setActiveTab('pantry')} />
@@ -153,19 +155,12 @@ function ReviewCard({ review, onEdit, onDelete, onToggleFavorite }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Flame size={14} color={theme.secondary}/> Torra: {review.roast_level}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Coffee size={14} color={theme.secondary}/> {review.brew_method}</div>
         </div>
-        {/* CORREÇÃO DO WRAP DE TEXTO AQUI */}
+        {/* CORREÇÃO DE WRAP PARA TEXTOS LONGOS */}
         {review.notes && (
           <div style={{ 
-            marginTop: '15px', 
-            padding: '12px', 
-            background: '#F9F9F9', 
-            borderRadius: '12px', 
-            borderLeft: `3px solid ${theme.accent}`, 
-            fontSize: '0.85rem', 
-            fontStyle: 'italic',
-            wordBreak: 'break-word',
-            overflowWrap: 'break-word',
-            whiteSpace: 'pre-wrap'
+            marginTop: '15px', padding: '12px', background: '#F9F9F9', borderRadius: '12px', 
+            borderLeft: `3px solid ${theme.accent}`, fontSize: '0.85rem', fontStyle: 'italic',
+            wordBreak: 'break-word', overflowWrap: 'break-word', whiteSpace: 'pre-wrap'
           }}>
             "{review.notes}"
           </div>
@@ -207,11 +202,6 @@ function PantryTab() {
     fetchWishlist();
   }
 
-  async function deleteWish(id) {
-    await supabase.from('wishlist').delete().eq('id', id);
-    fetchWishlist();
-  }
-
   async function updateWeight(id, newWeight) {
     await supabase.from('inventory').update({ weight_current: Math.max(0, newWeight) }).eq('id', id);
     fetchPantry();
@@ -220,7 +210,7 @@ function PantryTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
       <section>
-        <h2 style={{ fontSize: '1.3rem', color: theme.primary, marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}><Package size={22}/> Estoque de Grãos</h2>
+        <h2 style={{ fontSize: '1.3rem', color: theme.primary, marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}><Package size={22}/> Estoque</h2>
         <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
           <input style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none' }} placeholder="Novo café..." value={newItemName} onChange={e => setNewItemName(e.target.value)} />
           <button onClick={addInventory} style={{ background: theme.primary, color: 'white', border: 'none', padding: '12px', borderRadius: '12px' }}><Plus/></button>
@@ -236,8 +226,9 @@ function PantryTab() {
                 <div style={{ width: `${(item.weight_current / item.weight_total) * 100}%`, height: '100%', background: theme.secondary, borderRadius: '10px' }}></div>
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
-                <button onClick={() => updateWeight(item.id, item.weight_current - 18)} style={{ flex: 1, padding: '6px', borderRadius: '8px', border: '1px solid #EEE', background: 'none', fontSize: '0.7rem' }}>-18g (1 dose)</button>
-                <button onClick={async () => { if(confirm("Remover?")) { await supabase.from('inventory').delete().eq('id', item.id); fetchPantry(); } }} style={{ padding: '6px', borderRadius: '8px', border: 'none', background: '#f8d7da', color: '#721c24' }}><Trash2 size={14}/></button>
+                {/* DOSE PADRÃO 18G */}
+                <button onClick={() => updateWeight(item.id, item.weight_current - 18)} style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #EEE', background: 'none', fontSize: '0.75rem', fontWeight: '600' }}>-18g (1 dose)</button>
+                <button onClick={async () => { if(confirm("Excluir?")) { await supabase.from('inventory').delete().eq('id', item.id); fetchPantry(); } }} style={{ padding: '8px', borderRadius: '8px', border: 'none', background: '#f8d7da', color: '#721c24' }}><Trash2 size={14}/></button>
               </div>
             </div>
           ))}
@@ -245,16 +236,16 @@ function PantryTab() {
       </section>
 
       <section style={{ background: '#FFF7ED', padding: '20px', borderRadius: '25px', border: '1px dashed #ECB159' }}>
-        <h2 style={{ fontSize: '1.3rem', color: theme.primary, marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}><ShoppingCart size={22}/> Lista de Desejos</h2>
+        <h2 style={{ fontSize: '1.3rem', color: theme.primary, marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}><ShoppingCart size={22}/> Wishlist</h2>
         <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-          <input style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #ECB15944', outline: 'none' }} placeholder="Desejo..." value={wishInput} onChange={e => setWishInput(e.target.value)} />
+          <input style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #ECB15944', outline: 'none' }} placeholder="O que quer provar?" value={wishInput} onChange={e => setWishInput(e.target.value)} />
           <button onClick={addWish} style={{ background: theme.accent, color: 'white', border: 'none', padding: '10px', borderRadius: '10px' }}><Plus/></button>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {wishlist.map(wish => (
             <div key={wish.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '10px 15px', borderRadius: '12px', fontSize: '0.9rem' }}>
               <span>{wish.item_name}</span>
-              <button onClick={() => deleteWish(wish.id)} style={{ background: 'none', border: 'none', color: theme.secondary }}><CheckCircle2 size={18}/></button>
+              <button onClick={async () => { await supabase.from('wishlist').delete().eq('id', wish.id); fetchWishlist(); }} style={{ background: 'none', border: 'none', color: theme.secondary }}><CheckCircle2 size={18}/></button>
             </div>
           ))}
         </div>
@@ -264,6 +255,7 @@ function PantryTab() {
 }
 
 function BrewToolsTab() {
+  {/* DOSE PADRÃO 18G */}
   const [coffee, setCoffee] = useState(18);
   const [ratio, setRatio] = useState(15);
   const [time, setTime] = useState(0);
@@ -289,7 +281,7 @@ function BrewToolsTab() {
           <div style={{ fontSize: '4rem', fontWeight: '800', fontFamily: 'monospace', color: theme.primary, marginBottom: '20px' }}>{formatTime(time)}</div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '20px' }}>
             <button onClick={() => {setIsRunning(false); setTime(0)}} style={{ background: '#F5F5F5', border: 'none', width: '50px', height: '50px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><RotateCcw size={20} color={theme.secondary} /></button>
-            <button onClick={() => setIsRunning(!isRunning)} style={{ background: theme.primary, border: 'none', width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: `0 4px 10px ${theme.primary}44` }}>
+            <button onClick={() => setIsRunning(!isRunning)} style={{ background: theme.primary, border: 'none', width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
               {isRunning ? <Pause size={24} color="white" /> : <Play size={24} color="white" style={{ marginLeft: '4px' }} />}
             </button>
           </div>
@@ -338,7 +330,7 @@ function StatsTab({ reviews }) {
           <div style={{ width: '100%', height: '8px', background: '#F0F0F0', borderRadius: '10px' }}><div style={{ width: total > 0 ? '75%' : '0%', height: '100%', background: theme.primary, borderRadius: '10px' }}></div></div>
         </div>
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}><span>Taxa de Favoritos:</span><span style={{ fontWeight: 'bold' }}>{total > 0 ? Math.round((favs/total)*100) : 0}%</span></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}><span>Favoritos:</span><span style={{ fontWeight: 'bold' }}>{total > 0 ? Math.round((favs/total)*100) : 0}%</span></div>
           <div style={{ width: '100%', height: '8px', background: '#F0F0F0', borderRadius: '10px' }}><div style={{ width: total > 0 ? `${(favs/total)*100}%` : '0%', height: '100%', background: '#d9534f', borderRadius: '10px' }}></div></div>
         </div>
       </div>
@@ -419,7 +411,7 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
       </label>
       
       <button type="submit" disabled={uploading} style={{ width: '100%', background: theme.primary, color: 'white', border: 'none', padding: '15px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
-        {uploading ? 'A carregar...' : 'Salvar Review'}
+        {uploading ? 'Salvando...' : 'Salvar Review'}
       </button>
     </form>
   )
