@@ -71,7 +71,7 @@ export default function App() {
         )}
       </div>
 
-      {/* NAVEGAÇÃO INFERIOR FIXA */}
+      {/* NAVEGAÇÃO INFERIOR */}
       {view === 'list' && (
         <nav style={{
           position: 'fixed', bottom: 0, left: 0, right: 0, height: '75px',
@@ -129,22 +129,13 @@ function HomeTab({ reviews, searchTerm, setSearchTerm, onEdit, onDelete, onToggl
 
 function ReviewCard({ review, onEdit, onDelete, onToggleFavorite }) {
   const hasImage = !!review.image_url;
-
   return (
     <div style={{ background: theme.card, borderRadius: '25px', overflow: 'hidden', boxShadow: '0 8px 20px rgba(0,0,0,0.04)', position: 'relative' }}>
       {hasImage && <img src={review.image_url} alt="Café" style={{ width: '100%', height: '220px', objectFit: 'cover' }} />}
-      
-      <div style={{ 
-        position: hasImage ? 'absolute' : 'relative', 
-        top: hasImage ? '15px' : '0', 
-        padding: '15px',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        width: '100%', boxSizing: 'border-box', zIndex: 10 
-      }}>
+      <div style={{ position: hasImage ? 'absolute' : 'relative', top: hasImage ? '15px' : '0', padding: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', boxSizing: 'border-box', zIndex: 10 }}>
         <button onClick={onToggleFavorite} style={{ background: 'white', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer' }}>
           <Heart size={18} fill={review.is_favorite ? "#d9534f" : "none"} color={review.is_favorite ? "#d9534f" : theme.secondary} />
         </button>
-
         <div style={{ display: 'flex', gap: '8px' }}>
           <div style={{ background: 'white', padding: '5px 12px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', fontWeight: 'bold', color: theme.accent, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
             {review.rating} <Star size={12} fill={theme.accent} stroke="none" />
@@ -153,11 +144,9 @@ function ReviewCard({ review, onEdit, onDelete, onToggleFavorite }) {
           <button onClick={onDelete} style={{ background: 'white', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer' }}><Trash2 size={14} color="#d9534f" /></button>
         </div>
       </div>
-
       <div style={{ padding: '5px 20px 20px 20px' }}>
         <h3 style={{ margin: 0, fontSize: '1.2rem' }}>{review.coffee_name}</h3>
         <p style={{ margin: '4px 0 15px 0', color: theme.secondary, fontSize: '0.85rem' }}>{review.brand} • {review.origin}</p>
-        
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.8rem', color: '#666' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Droplets size={14} color={theme.secondary}/> Acidez: {review.acidity}/5</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Bean size={14} color={theme.secondary}/> Corpo: {review.body}/5</div>
@@ -258,9 +247,14 @@ function GuideTab() {
 }
 
 function ReviewForm({ mode, initialData, onSave, onCancel }) {
-  const [form, setForm] = useState(initialData || { coffee_name: '', brand: '', origin: '', brew_method: 'Coado (V60/Melitta)', roast_level: 'Média', rating: 5, notes: '', image_url: '', acidity: 3, body: 3, is_favorite: false })
+  const [form, setForm] = useState(initialData || { 
+    coffee_name: '', brand: '', origin: '', brew_method: 'Coado (V60/Melitta)', 
+    roast_level: 'Média', rating: 5, notes: '', image_url: '', acidity: 3, body: 3, is_favorite: false 
+  })
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef(null)
+
+  const inputStyle = { width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #EEE', outline: 'none', boxSizing: 'border-box' }
 
   async function handleFileUpload(e) {
     const file = e.target.files[0];
@@ -284,16 +278,49 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
   return (
     <form onSubmit={handleSubmit} style={{ background: 'white', padding: '20px', borderRadius: '25px' }}>
       <button type="button" onClick={onCancel} style={{ background: 'none', border: 'none', marginBottom: '15px' }}><ArrowLeft /></button>
+      
       <div onClick={() => fileInputRef.current.click()} style={{ width: '100%', height: '180px', background: '#F5F5F5', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', overflow: 'hidden', cursor: 'pointer' }}>
         {form.image_url ? <img src={form.image_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : uploading ? <Loader2 className="animate-spin" /> : <Camera color="#CCC" />}
       </div>
       <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload} />
-      <input style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #EEE', outline: 'none' }} placeholder="Nome do Café" required value={form.coffee_name} onChange={e => setForm({...form, coffee_name: e.target.value})} />
-      <input style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #EEE', outline: 'none' }} placeholder="Marca" value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} />
-      <input style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #EEE', outline: 'none' }} placeholder="Origem" value={form.origin} onChange={e => setForm({...form, origin: e.target.value})} />
-      <textarea style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #EEE', outline: 'none', minHeight: '80px' }} placeholder="Notas de degustação..." value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} />
-      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}><input type="checkbox" checked={form.is_favorite} onChange={e => setForm({...form, is_favorite: e.target.checked})} /> Favorito ❤️</label>
-      <button type="submit" disabled={uploading} style={{ width: '100%', background: theme.primary, color: 'white', border: 'none', padding: '15px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>{uploading ? 'A carregar...' : 'Salvar Review'}</button>
+      
+      <input style={inputStyle} placeholder="Nome do Café" required value={form.coffee_name} onChange={e => setForm({...form, coffee_name: e.target.value})} />
+      <input style={inputStyle} placeholder="Marca" value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} />
+      <input style={inputStyle} placeholder="Origem" value={form.origin} onChange={e => setForm({...form, origin: e.target.value})} />
+      
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+        <div>
+          <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>ACIDEZ (1-5)</label>
+          <input type="number" min="1" max="5" style={inputStyle} value={form.acidity} onChange={e => setForm({...form, acidity: e.target.value})} />
+        </div>
+        <div>
+          <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>CORPO (1-5)</label>
+          <input type="number" min="1" max="5" style={inputStyle} value={form.body} onChange={e => setForm({...form, body: e.target.value})} />
+        </div>
+      </div>
+
+      <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>MÉTODO</label>
+      <select style={inputStyle} value={form.brew_method} onChange={e => setForm({...form, brew_method: e.target.value})}>
+        <option>Coado (V60/Melitta)</option><option>Prensa Francesa</option><option>Espresso</option><option>Aeropress</option><option>Moka</option>
+      </select>
+
+      <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>TORRA</label>
+      <select style={inputStyle} value={form.roast_level} onChange={e => setForm({...form, roast_level: e.target.value})}>
+        <option>Clara</option><option>Média</option><option>Escura</option>
+      </select>
+
+      <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>NOTA (1-5)</label>
+      <input type="number" min="1" max="5" style={inputStyle} value={form.rating} onChange={e => setForm({...form, rating: e.target.value})} />
+
+      <textarea style={{ ...inputStyle, minHeight: '80px' }} placeholder="Notas de degustação..." value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} />
+      
+      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+        <input type="checkbox" checked={form.is_favorite} onChange={e => setForm({...form, is_favorite: e.target.checked})} /> Favorito ❤️
+      </label>
+      
+      <button type="submit" disabled={uploading} style={{ width: '100%', background: theme.primary, color: 'white', border: 'none', padding: '15px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
+        {uploading ? 'A carregar...' : 'Salvar Review'}
+      </button>
     </form>
   )
 }
