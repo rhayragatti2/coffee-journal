@@ -149,38 +149,27 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
   const cameraInputRef = useRef(null)
 
   async function handleFileUpload(e) {
-  try {
-    const file = e.target.files[0]
-    if (!file) return
-    
-    setUploading(true)
-    
-    // Gera um nome único usando timestamp + número aleatório
-    const fileExt = file.name ? file.name.split('.').pop() : 'jpg'
-    const fileName = `${Date.now()}-${Math.floor(Math.random() * 1000)}.${fileExt}`
-    const filePath = fileName
-
-    let { error: uploadError } = await supabase.storage
-      .from('coffee-images')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      })
-
-    if (uploadError) throw uploadError
-
-    const { data } = supabase.storage
-      .from('coffee-images')
-      .getPublicUrl(filePath)
+    try {
+      const file = e.target.files[0]
+      if (!file) return
+      setUploading(true)
       
-    setForm({ ...form, image_url: data.publicUrl })
-  } catch (error) {
-    console.error('Erro detalhado:', error)
-    alert('Erro no upload! Verifique se o Bucket "coffee-images" é público no Supabase.')
-  } finally {
-    setUploading(false)
+      // Correção: Gerar nome único com timestamp para evitar conflitos no Storage
+      const fileExt = file.name ? file.name.split('.').pop() : 'jpg'
+      const fileName = `${Date.now()}-${Math.floor(Math.random() * 1000)}.${fileExt}`
+      
+      let { error: uploadError } = await supabase.storage.from('coffee-images').upload(fileName, file)
+      if (uploadError) throw uploadError
+
+      const { data } = supabase.storage.from('coffee-images').getPublicUrl(fileName)
+      setForm({ ...form, image_url: data.publicUrl })
+    } catch (error) {
+      console.error(error)
+      alert('Erro no upload! Verifique as permissões (RLS) no Supabase.')
+    } finally {
+      setUploading(false)
+    }
   }
-}
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -193,7 +182,7 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
       error = addError
     }
     if (!error) onSave()
-    else alert('Erro ao salvar')
+    else alert('Erro ao salvar no banco de dados')
   }
 
   const inputStyle = { width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '12px', border: '1px solid #eee', boxSizing: 'border-box', backgroundColor: '#F9F9F9' }
@@ -257,7 +246,7 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
       <textarea style={{ ...inputStyle, height: '80px', resize: 'none' }} value={form.notes} onChange={e => setForm({...form, notes: e.target.value})}></textarea>
 
       <button type="submit" disabled={uploading} style={{ width: '100%', background: theme.primary, color: 'white', border: 'none', padding: '16px', borderRadius: '15px', fontWeight: 'bold', cursor: 'pointer' }}>
-        {uploading ? 'Aguarde...' : 'Salvar Review'}
+        {uploading ? 'Enviando Foto...' : 'Salvar Review'}
       </button>
     </form>
   )
