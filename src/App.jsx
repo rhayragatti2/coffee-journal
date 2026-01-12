@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabaseClient'
-import { Coffee, Plus, Star, ArrowLeft, Bean, Droplets, Camera, Image as ImageIcon, Loader2, Flame, Trash2, Edit3, Search, Heart, Award } from 'lucide-react'
+import { 
+  Coffee, Plus, Star, ArrowLeft, Bean, Droplets, Camera, 
+  Image as ImageIcon, Loader2, Flame, Trash2, Edit3, Search, 
+  Heart, LayoutGrid, BarChart3, BookOpen, Clock, Calculator, ChevronRight
+} from 'lucide-react'
 
 const theme = {
   primary: '#6F4E37',
@@ -12,7 +16,8 @@ const theme = {
 }
 
 export default function App() {
-  const [view, setView] = useState('list')
+  const [activeTab, setActiveTab] = useState('home') // home, stats, brew, guide
+  const [view, setView] = useState('list') 
   const [reviews, setReviews] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
   const [currentReview, setCurrentReview] = useState(null)
@@ -20,9 +25,7 @@ export default function App() {
   useEffect(() => { fetchReviews() }, [])
 
   async function fetchReviews() {
-    const { data } = await supabase
-      .from('reviews')
-      .select('*')
+    const { data } = await supabase.from('reviews').select('*')
       .order('is_favorite', { ascending: false })
       .order('created_at', { ascending: false })
     if (data) setReviews(data)
@@ -30,101 +33,29 @@ export default function App() {
 
   const filteredReviews = reviews.filter(r => 
     r.coffee_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.origin?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.notes?.toLowerCase().includes(searchTerm.toLowerCase())
+    r.brand?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const handleToggleFavorite = async (id, currentStatus) => {
-    const { error } = await supabase
-      .from('reviews')
-      .update({ is_favorite: !currentStatus })
-      .eq('id', id)
-    if (!error) fetchReviews()
-  }
-
-  const handleEdit = (review) => {
-    setCurrentReview(review)
-    setView('edit')
-  }
-
-  const handleDelete = async (id) => {
-    if (window.confirm("Deseja realmente eliminar este registo?")) {
-      const { error } = await supabase.from('reviews').delete().eq('id', id)
-      if (!error) fetchReviews()
-      else alert("Erro ao eliminar")
-    }
-  }
-
-  // Estatísticas para o topo
-  const totalReviews = reviews.length
-  const favoriteCount = reviews.filter(r => r.is_favorite).length
-
   return (
-    <div style={{ backgroundColor: theme.bg, minHeight: '100vh', fontFamily: "sans-serif", color: theme.text }}>
+    <div style={{ backgroundColor: theme.bg, minHeight: '100vh', paddingBottom: '90px', color: theme.text }}>
       <div style={{ maxWidth: '500px', margin: '0 auto', padding: '20px' }}>
         
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-          <h1 style={{ fontSize: '1.4rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px', color: theme.primary }}>
-            <Coffee size={28} /> COFFEE JOURNAL
-          </h1>
-          {view === 'list' && (
-            <button onClick={() => setView('add')} style={{ background: theme.primary, color: 'white', border: 'none', padding: '10px 20px', borderRadius: '50px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Plus size={18} /> Novo
-            </button>
-          )}
-        </header>
-
-        {view === 'list' && (
+        {view === 'list' ? (
           <>
-            {/* Painel de Estatísticas Rápido */}
-            <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
-               <div style={{ flex: 1, background: 'rgba(111, 78, 55, 0.05)', padding: '12px', borderRadius: '15px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.7rem', fontWeight: 'bold', color: theme.secondary, textTransform: 'uppercase' }}>Total de Cafés</div>
-                  <div style={{ fontSize: '1.2rem', fontWeight: '800', color: theme.primary }}>{totalReviews}</div>
-               </div>
-               <div style={{ flex: 1, background: 'rgba(236, 177, 89, 0.1)', padding: '12px', borderRadius: '15px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.7rem', fontWeight: 'bold', color: theme.secondary, textTransform: 'uppercase' }}>Favoritos</div>
-                  <div style={{ fontSize: '1.2rem', fontWeight: '800', color: theme.accent }}>{favoriteCount}</div>
-               </div>
-            </div>
-
-            <div style={{ position: 'relative', marginBottom: '25px' }}>
-              <Search size={18} color={theme.secondary} style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)' }} />
-              <input 
-                type="text" 
-                placeholder="Procurar grão, marca ou notas..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ 
-                  width: '100%', padding: '12px 12px 12px 45px', borderRadius: '15px', border: 'none', 
-                  backgroundColor: 'white', boxShadow: '0 4px 10px rgba(0,0,0,0.03)', boxSizing: 'border-box',
-                  fontSize: '0.9rem', outline: 'none'
-                }} 
+            {activeTab === 'home' && (
+              <HomeTab reviews={filteredReviews} searchTerm={searchTerm} setSearchTerm={setSearchTerm} 
+                onEdit={(r) => { setCurrentReview(r); setView('edit'); }} 
+                onToggleFavorite={async (id, status) => {
+                  await supabase.from('reviews').update({ is_favorite: !status }).eq('id', id);
+                  fetchReviews();
+                }}
               />
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {filteredReviews.length === 0 ? (
-                <p style={{ textAlign: 'center', opacity: 0.6, marginTop: '20px' }}>
-                  {searchTerm ? 'Nenhum café encontrado.' : 'Comece a registar as suas experiências!'}
-                </p>
-              ) : (
-                filteredReviews.map(r => (
-                  <ReviewCard 
-                    key={r.id} 
-                    review={r} 
-                    onEdit={() => handleEdit(r)} 
-                    onDelete={() => handleDelete(r.id)} 
-                    onToggleFavorite={() => handleToggleFavorite(r.id, r.is_favorite)}
-                  />
-                ))
-              )}
-            </div>
+            )}
+            {activeTab === 'stats' && <StatsTab reviews={reviews} />}
+            {activeTab === 'brew' && <BrewToolsTab />}
+            {activeTab === 'guide' && <GuideTab />}
           </>
-        )}
-
-        {view !== 'list' && (
+        ) : (
           <ReviewForm 
             mode={view} 
             initialData={currentReview} 
@@ -133,183 +64,138 @@ export default function App() {
           />
         )}
       </div>
+
+      {/* NAVEGAÇÃO INFERIOR */}
+      {view === 'list' && (
+        <nav style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, height: '75px',
+          backgroundColor: '#FFF', display: 'flex', justifyContent: 'space-around',
+          alignItems: 'center', boxShadow: '0 -5px 20px rgba(0,0,0,0.05)', zIndex: 1000,
+          paddingBottom: 'env(safe-area-inset-bottom)', borderTop: '1px solid #EEE'
+        }}>
+          <NavButton icon={<LayoutGrid size={22}/>} label="Início" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
+          <NavButton icon={<BarChart3 size={22}/>} label="Stats" active={activeTab === 'stats'} onClick={() => setActiveTab('stats')} />
+          
+          <button onClick={() => setView('add')} style={{
+            width: '56px', height: '56px', borderRadius: '50%', backgroundColor: theme.primary,
+            color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            marginTop: '-35px', boxShadow: `0 8px 15px ${theme.primary}44`, border: 'none'
+          }}><Plus size={28} /></button>
+
+          <NavButton icon={<Calculator size={22}/>} label="Preparo" active={activeTab === 'brew'} onClick={() => setActiveTab('brew')} />
+          <NavButton icon={<BookOpen size={22}/>} label="Guias" active={activeTab === 'guide'} onClick={() => setActiveTab('guide')} />
+        </nav>
+      )}
     </div>
   )
 }
 
-function ReviewCard({ review, onEdit, onDelete, onToggleFavorite }) {
-  const hasImage = !!review.image_url;
+function NavButton({ icon, label, active, onClick }) {
+  return (
+    <button onClick={onClick} style={{
+      background: 'none', border: 'none', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', gap: '4px', color: active ? theme.primary : '#A0A0A0',
+      fontSize: '10px', fontWeight: active ? 'bold' : '500', transition: '0.2s'
+    }}>{icon}<span>{label}</span></button>
+  )
+}
+
+// --- ABA: FERRAMENTAS DE PREPARO (CALCULADORA) ---
+function BrewToolsTab() {
+  const [coffee, setCoffee] = useState(15);
+  const [ratio, setRatio] = useState(15); // 1:15 default
+
+  const water = coffee * ratio;
 
   return (
-    <div style={{ background: theme.card, borderRadius: '25px', overflow: 'hidden', boxShadow: '0 8px 20px rgba(0,0,0,0.04)', marginBottom: '5px', position: 'relative' }}>
-      {hasImage && <img src={review.image_url} alt="Café" style={{ width: '100%', height: '250px', objectFit: 'cover' }} />}
-      
-      <div style={{ 
-        position: hasImage ? 'absolute' : 'relative', 
-        top: hasImage ? '15px' : '0', 
-        left: '0',
-        right: '0',
-        padding: hasImage ? '0 15px' : '20px 20px 0 20px',
-        display: 'flex', 
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        zIndex: 10 
-      }}>
-        <button 
-          onClick={onToggleFavorite}
-          style={{ background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
-        >
-          <Heart size={18} fill={review.is_favorite ? "#d9534f" : "none"} color={review.is_favorite ? "#d9534f" : theme.secondary} />
-        </button>
-
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <div style={{ color: theme.accent, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.9)', padding: '6px 12px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-            {review.rating} <Star size={14} fill={theme.accent} stroke="none" />
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={onEdit} style={{ background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%', cursor: 'pointer', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-              <Edit3 size={16} color={theme.primary} />
-            </button>
-            <button onClick={onDelete} style={{ background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%', cursor: 'pointer', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-              <Trash2 size={16} color="#d9534f" />
-            </button>
-          </div>
+    <div>
+      <h2 style={{ fontSize: '1.4rem', color: theme.primary, marginBottom: '20px' }}>Calculadora de Proporção</h2>
+      <div style={{ background: 'white', padding: '25px', borderRadius: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: theme.secondary }}>QUANTIDADE DE CAFÉ (g)</label>
+          <input type="number" value={coffee} onChange={(e) => setCoffee(e.target.value)} 
+            style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '1px solid #EEE', marginTop: '8px', fontSize: '1.2rem', fontWeight: 'bold' }} />
+        </div>
+        <div style={{ marginBottom: '25px' }}>
+          <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: theme.secondary }}>PROPORÇÃO (1:{ratio})</label>
+          <input type="range" min="10" max="20" value={ratio} onChange={(e) => setRatio(e.target.value)} 
+            style={{ width: '100%', accentColor: theme.primary, marginTop: '10px' }} />
+        </div>
+        <div style={{ textAlign: 'center', padding: '20px', backgroundColor: theme.bg, borderRadius: '15px' }}>
+          <span style={{ fontSize: '0.9rem', color: theme.secondary }}>Você precisará de:</span>
+          <h1 style={{ margin: '5px 0', color: theme.primary }}>{water}ml <span style={{ fontSize: '1rem' }}>de água</span></h1>
         </div>
       </div>
-
-      <div style={{ padding: hasImage ? '20px' : '10px 20px 20px 20px' }}>
-        <h3 style={{ margin: 0, fontSize: '1.2rem', wordBreak: 'break-word', marginTop: hasImage ? '0' : '5px' }}>
-          {review.coffee_name}
-        </h3>
-        <p style={{ margin: '4px 0', color: theme.secondary, fontSize: '0.9rem', fontWeight: '500', wordBreak: 'break-word' }}>{review.brand} • {review.origin}</p>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '18px', fontSize: '0.8rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#666' }}><Droplets size={14} color={theme.secondary}/> Acidez: {review.acidity}/5</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#666' }}><Bean size={14} color={theme.secondary}/> Corpo: {review.body}/5</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#666' }}><Flame size={14} color={theme.secondary}/> Torra: {review.roast_level}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#666' }}><Coffee size={14} color={theme.secondary}/> {review.brew_method}</div>
-        </div>
-
-        {review.notes && (
-          <div style={{ marginTop: '18px', padding: '12px', background: '#F9F9F9', borderRadius: '15px', borderLeft: `3px solid ${theme.accent}`, boxSizing: 'border-box', width: '100%', overflow: 'hidden' }}>
-            <span style={{ fontSize: '0.85rem', fontStyle: 'italic', display: 'block', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', lineHeight: '1.4' }}>
-              "{review.notes}"
-            </span>
-          </div>
-        )}
+      <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '10px', padding: '15px', background: '#F0EBE3', borderRadius: '15px', color: theme.primary }}>
+        <Clock size={20} />
+        <span style={{ fontSize: '0.85rem', fontWeight: '600' }}>Em breve: Temporizador de Extração</span>
       </div>
     </div>
   )
 }
 
-function ReviewForm({ mode, initialData, onSave, onCancel }) {
-  const [form, setForm] = useState(initialData || { coffee_name: '', brand: '', origin: '', brew_method: 'Coado (V60/Melitta)', roast_level: 'Média', rating: 5, notes: '', image_url: '', acidity: 3, body: 3, is_favorite: false })
-  const [uploading, setUploading] = useState(false)
-  const fileInputRef = useRef(null)
-  const cameraInputRef = useRef(null)
-
-  async function handleFileUpload(e) {
-    try {
-      const file = e.target.files[0]
-      if (!file) return
-      setUploading(true)
-      const fileExt = file.name ? file.name.split('.').pop() : 'jpg'
-      const fileName = `${Date.now()}-${Math.floor(Math.random() * 1000)}.${fileExt}`
-      let { error: uploadError } = await supabase.storage.from('coffee-images').upload(fileName, file)
-      if (uploadError) throw uploadError
-      const { data } = supabase.storage.from('coffee-images').getPublicUrl(fileName)
-      setForm({ ...form, image_url: data.publicUrl })
-    } catch (error) {
-      alert('Erro no upload!')
-    } finally {
-      setUploading(false)
-    }
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault()
-    let error;
-    if (mode === 'edit') {
-      const { error: editError } = await supabase.from('reviews').update(form).eq('id', initialData.id)
-      error = editError
-    } else {
-      const { error: addError } = await supabase.from('reviews').insert([form])
-      error = addError
-    }
-    if (!error) onSave()
-    else alert('Erro ao guardar')
-  }
-
-  const inputStyle = { width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '12px', border: '1px solid #eee', boxSizing: 'border-box', backgroundColor: '#F9F9F9' }
-  const labelStyle = { fontSize: '0.75rem', fontWeight: 'bold', display: 'block', marginBottom: '5px', color: theme.secondary }
+// --- ABA: GUIAS DE PREPARO ---
+function GuideTab() {
+  const guides = [
+    { name: 'Hario V60', ratio: '1:15', grind: 'Média-Fina', temp: '92-96°C' },
+    { name: 'Prensa Francesa', ratio: '1:12', grind: 'Grossa', temp: '94°C' },
+    { name: 'Aeropress', ratio: '1:13', grind: 'Média', temp: '85-90°C' },
+    { name: 'Moka (Italiana)', ratio: '1:10', grind: 'Fina', temp: 'Água quente' }
+  ];
 
   return (
-    <form onSubmit={handleSubmit} style={{ background: 'white', padding: '25px', borderRadius: '30px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
-      <button type="button" onClick={onCancel} style={{ background: 'none', border: 'none', marginBottom: '15px', cursor: 'pointer', padding: 0 }}><ArrowLeft color={theme.primary} /></button>
-      
-      <div style={{ marginBottom: '25px' }}>
-        <div style={{ width: '100%', height: '200px', background: '#F5F5F5', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '2px dashed #eee', marginBottom: '12px' }}>
-          {form.image_url ? <img src={form.image_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : 
-           uploading ? <Loader2 className="animate-spin" /> : <Coffee size={40} color="#CCC" />}
-        </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button type="button" onClick={() => cameraInputRef.current.click()} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '12px', border: `1px solid ${theme.primary}`, background: 'none', color: theme.primary, fontWeight: 'bold', fontSize: '0.8rem' }}>
-            <Camera size={16} /> Câmara
-          </button>
-          <button type="button" onClick={() => fileInputRef.current.click()} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '12px', border: `1px solid ${theme.primary}`, background: 'none', color: theme.primary, fontWeight: 'bold', fontSize: '0.8rem' }}>
-            <ImageIcon size={16} /> Galeria
-          </button>
-        </div>
-        <input type="file" accept="image/*" capture="environment" ref={cameraInputRef} style={{ display: 'none' }} onChange={handleFileUpload} />
-        <input type="file" accept="image/*" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload} />
+    <div>
+      <h2 style={{ fontSize: '1.4rem', color: theme.primary, marginBottom: '20px' }}>Guia de Preparo</h2>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {guides.map(g => (
+          <div key={g.name} style={{ background: 'white', padding: '18px', borderRadius: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.02)' }}>
+            <div>
+              <h4 style={{ margin: 0, color: theme.primary }}>{g.name}</h4>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: theme.secondary }}>Moagem: {g.grind} • Temp: {g.temp}</p>
+            </div>
+            <ChevronRight size={18} color={theme.secondary} />
+          </div>
+        ))}
       </div>
-
-      <label style={labelStyle}>NOME DO CAFÉ</label>
-      <input style={inputStyle} required value={form.coffee_name} onChange={e => setForm({...form, coffee_name: e.target.value})} />
-
-      <label style={labelStyle}>MARCA / TORREFAÇÃO</label>
-      <input style={inputStyle} value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} />
-
-      <label style={labelStyle}>ORIGEM</label>
-      <input style={inputStyle} value={form.origin} onChange={e => setForm({...form, origin: e.target.value})} />
-
-      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '15px' }}>
-        <label style={{ ...labelStyle, marginBottom: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <input type="checkbox" checked={form.is_favorite} onChange={e => setForm({...form, is_favorite: e.target.checked})} style={{ width: '18px', height: '18px', accentColor: theme.primary }} />
-          Marcar como Favorito ❤️
-        </label>
-      </div>
-
-      <div style={{ display: 'flex', gap: '12px' }}>
-        <div style={{ flex: 1 }}>
-          <label style={labelStyle}>MÉTODO</label>
-          <select style={inputStyle} value={form.brew_method} onChange={e => setForm({...form, brew_method: e.target.value})}>
-            <option>Coado (V60/Melitta)</option><option>Espresso</option><option>Prensa</option><option>Aeropress</option><option>Moka</option>
-          </select>
-        </div>
-        <div style={{ flex: 1 }}>
-          <label style={labelStyle}>TORRA</label>
-          <select style={inputStyle} value={form.roast_level} onChange={e => setForm({...form, roast_level: e.target.value})}>
-            <option>Clara</option><option>Média</option><option>Escura</option>
-          </select>
-        </div>
-      </div>
-
-      <label style={labelStyle}>ACIDEZ: {form.acidity}/5</label>
-      <input type="range" min="1" max="5" style={{ width: '100%', accentColor: theme.primary, marginBottom: '20px' }} value={form.acidity} onChange={e => setForm({...form, acidity: e.target.value})} />
-
-      <label style={labelStyle}>CORPO: {form.body}/5</label>
-      <input type="range" min="1" max="5" style={{ width: '100%', accentColor: theme.primary, marginBottom: '20px' }} value={form.body} onChange={e => setForm({...form, body: e.target.value})} />
-
-      <label style={labelStyle}>SUA NOTA (1 A 5)</label>
-      <input type="number" min="1" max="5" style={inputStyle} value={form.rating} onChange={e => setForm({...form, rating: e.target.value})} />
-
-      <label style={labelStyle}>NOTAS SENSORIAIS</label>
-      <textarea style={{ ...inputStyle, height: '80px', resize: 'none' }} value={form.notes} onChange={e => setForm({...form, notes: e.target.value})}></textarea>
-
-      <button type="submit" disabled={uploading} style={{ width: '100%', background: theme.primary, color: 'white', border: 'none', padding: '16px', borderRadius: '15px', fontWeight: 'bold', cursor: 'pointer' }}>
-        {uploading ? 'A aguardar...' : mode === 'edit' ? 'Guardar Alterações' : 'Guardar Review'}
-      </button>
-    </form>
+    </div>
   )
 }
+
+// --- ABA: HOME (LISTA) ---
+function HomeTab({ reviews, searchTerm, setSearchTerm, onEdit, onToggleFavorite }) {
+  return (
+    <>
+      <div style={{ position: 'relative', marginBottom: '20px' }}>
+        <Search size={18} color={theme.secondary} style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)' }} />
+        <input type="text" placeholder="Buscar café..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+          style={{ width: '100%', padding: '12px 12px 12px 45px', borderRadius: '15px', border: 'none', backgroundColor: 'white', boxShadow: '0 4px 10px rgba(0,0,0,0.03)', boxSizing: 'border-box' }} 
+        />
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {reviews.map(r => (
+          <ReviewCard key={r.id} review={r} onEdit={() => onEdit(r)} onToggleFavorite={() => onToggleFavorite(r.id, r.is_favorite)} />
+        ))}
+      </div>
+    </>
+  )
+}
+
+// --- ABA: STATS (SIMPLIFICADA POR ENQUANTO) ---
+function StatsTab({ reviews }) {
+  const total = reviews.length;
+  const favs = reviews.filter(r => r.is_favorite).length;
+  return (
+    <div>
+      <h2 style={{ fontSize: '1.4rem', color: theme.primary, marginBottom: '20px' }}>Estatísticas</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+        <div style={{ background: 'white', padding: '20px', borderRadius: '20px', textAlign: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.03)' }}>
+          <span style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>TOTAL</span>
+          <h2 style={{ margin: '5px 0', color: theme.primary }}>{total}</h2>
+        </div>
+        <div style={{ background: 'white', padding: '20px', borderRadius: '20px', textAlign: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.03)' }}>
+          <span style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>FAVORITOS</span>
+          <h2 style={{ margin: '5px 0', color: theme.accent }}>{favs}</h2>
+        </div>
+      </div>
+      <p style={{ textAlign: 'center', marginTop: '30px', color: theme.secondary, fontStyle: 'italic', fontSize: '0.8rem' }}>
+        Em breve: Gráficos de métodos e histórico
