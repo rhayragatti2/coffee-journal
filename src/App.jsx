@@ -24,7 +24,6 @@ export default function App() {
     if (data) setReviews(data)
   }
 
-  // Lógica de Busca: Filtra por nome, marca, origem ou notas
   const filteredReviews = reviews.filter(r => 
     r.coffee_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     r.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -81,7 +80,7 @@ export default function App() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {filteredReviews.length === 0 ? (
               <p style={{ textAlign: 'center', opacity: 0.6, marginTop: '20px' }}>
-                {searchTerm ? 'Nenhum café encontrado para esta busca.' : 'Nenhum café registrado.'}
+                {searchTerm ? 'Nenhum café encontrado.' : 'Nenhum café registrado.'}
               </p>
             ) : (
               filteredReviews.map(r => (
@@ -107,25 +106,24 @@ function ReviewCard({ review, onEdit, onDelete }) {
     <div style={{ background: theme.card, borderRadius: '25px', overflow: 'hidden', boxShadow: '0 8px 20px rgba(0,0,0,0.04)', marginBottom: '5px', position: 'relative' }}>
       {review.image_url && <img src={review.image_url} alt="Café" style={{ width: '100%', height: '250px', objectFit: 'cover' }} />}
       
-      <div style={{ position: 'absolute', top: '15px', right: '15px', display: 'flex', gap: '8px' }}>
-        <button onClick={onEdit} style={{ background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%', cursor: 'pointer', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-          <Edit3 size={16} color={theme.primary} />
-        </button>
-        <button onClick={onDelete} style={{ background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%', cursor: 'pointer', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-          <Trash2 size={16} color="#d9534f" />
-        </button>
+      <div style={{ position: 'absolute', top: '15px', right: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ color: theme.accent, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.9)', padding: '6px 12px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+          {review.rating} <Star size={14} fill={theme.accent} stroke="none" />
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={onEdit} style={{ background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%', cursor: 'pointer', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+            <Edit3 size={16} color={theme.primary} />
+          </button>
+          <button onClick={onDelete} style={{ background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%', cursor: 'pointer', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+            <Trash2 size={16} color="#d9534f" />
+          </button>
+        </div>
       </div>
 
       <div style={{ padding: '20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <h3 style={{ margin: 0, fontSize: '1.2rem' }}>{review.coffee_name}</h3>
-            <p style={{ margin: '4px 0', color: theme.secondary, fontSize: '0.9rem', fontWeight: '500' }}>{review.brand} • {review.origin}</p>
-          </div>
-          <div style={{ color: theme.accent, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', background: '#FDF7F0', padding: '4px 10px', borderRadius: '12px' }}>
-            {review.rating} <Star size={14} fill={theme.accent} stroke="none" />
-          </div>
-        </div>
+        <h3 style={{ margin: 0, fontSize: '1.2rem', paddingRight: '130px' }}>{review.coffee_name}</h3>
+        <p style={{ margin: '4px 0', color: theme.secondary, fontSize: '0.9rem', fontWeight: '500' }}>{review.brand} • {review.origin}</p>
         
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '18px', fontSize: '0.8rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#666' }}><Droplets size={14} color={theme.secondary}/> Acidez: {review.acidity}/5</div>
@@ -145,7 +143,7 @@ function ReviewCard({ review, onEdit, onDelete }) {
 }
 
 function ReviewForm({ mode, initialData, onSave, onCancel }) {
-  const [form, setForm] = useState(initialData || { coffee_name: '', brand: '', origin: '', brew_method: 'V60', roast_level: 'Média', rating: 5, notes: '', image_url: '', acidity: 3, body: 3 })
+  const [form, setForm] = useState(initialData || { coffee_name: '', brand: '', origin: '', brew_method: 'Coado (V60/Melitta)', roast_level: 'Média', rating: 5, notes: '', image_url: '', acidity: 3, body: 3 })
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef(null)
   const cameraInputRef = useRef(null)
@@ -177,13 +175,12 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
       const { error: addError } = await supabase.from('reviews').insert([form])
       error = addError
     }
-    
     if (!error) onSave()
     else alert('Erro ao salvar')
   }
 
   const inputStyle = { width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '12px', border: '1px solid #eee', boxSizing: 'border-box', backgroundColor: '#F9F9F9' }
-  const labelStyle = { fontSize: '0.75rem', fontWeight: 'bold', display: 'block', marginBottom: '5px', color: theme.secondary, letterSpacing: '0.5px' }
+  const labelStyle = { fontSize: '0.75rem', fontWeight: 'bold', display: 'block', marginBottom: '5px', color: theme.secondary }
 
   return (
     <form onSubmit={handleSubmit} style={{ background: 'white', padding: '25px', borderRadius: '30px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
@@ -206,25 +203,20 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
         <input type="file" accept="image/*" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload} />
       </div>
 
-      <label style={labelStyle}>NOME DO GRÃO</label>
+      <label style={labelStyle}>NOME DO CAFÉ</label>
       <input style={inputStyle} required value={form.coffee_name} onChange={e => setForm({...form, coffee_name: e.target.value})} />
 
-      <div style={{ display: 'flex', gap: '12px' }}>
-        <div style={{ flex: 1 }}>
-          <label style={labelStyle}>MARCA</label>
-          <input style={inputStyle} value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} />
-        </div>
-        <div style={{ flex: 1 }}>
-          <label style={labelStyle}>ORIGEM</label>
-          <input style={inputStyle} value={form.origin} onChange={e => setForm({...form, origin: e.target.value})} />
-        </div>
-      </div>
+      <label style={labelStyle}>MARCA / TORREFAÇÃO</label>
+      <input style={inputStyle} value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} />
+
+      <label style={labelStyle}>ORIGEM</label>
+      <input style={inputStyle} value={form.origin} onChange={e => setForm({...form, origin: e.target.value})} />
 
       <div style={{ display: 'flex', gap: '12px' }}>
         <div style={{ flex: 1 }}>
           <label style={labelStyle}>MÉTODO</label>
           <select style={inputStyle} value={form.brew_method} onChange={e => setForm({...form, brew_method: e.target.value})}>
-            <option>V60</option><option>Espresso</option><option>Prensa</option><option>Aeropress</option><option>Moka</option><option>Coado</option>
+            <option>Coado (V60/Melitta)</option><option>Espresso</option><option>Prensa</option><option>Aeropress</option><option>Moka</option>
           </select>
         </div>
         <div style={{ flex: 1 }}>
@@ -235,24 +227,20 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
         </div>
       </div>
 
-      <div style={{ marginBottom: '18px' }}>
-        <label style={labelStyle}>ACIDEZ: {form.acidity}/5</label>
-        <input type="range" min="1" max="5" style={{ width: '100%', accentColor: theme.primary }} value={form.acidity} onChange={e => setForm({...form, acidity: e.target.value})} />
-      </div>
+      <label style={labelStyle}>ACIDEZ: {form.acidity}/5</label>
+      <input type="range" min="1" max="5" style={{ width: '100%', accentColor: theme.primary, marginBottom: '20px' }} value={form.acidity} onChange={e => setForm({...form, acidity: e.target.value})} />
 
-      <div style={{ marginBottom: '18px' }}>
-        <label style={labelStyle}>CORPO: {form.body}/5</label>
-        <input type="range" min="1" max="5" style={{ width: '100%', accentColor: theme.primary }} value={form.body} onChange={e => setForm({...form, body: e.target.value})} />
-      </div>
+      <label style={labelStyle}>CORPO: {form.body}/5</label>
+      <input type="range" min="1" max="5" style={{ width: '100%', accentColor: theme.primary, marginBottom: '20px' }} value={form.body} onChange={e => setForm({...form, body: e.target.value})} />
 
-      <label style={labelStyle}>AVALIAÇÃO GERAL</label>
+      <label style={labelStyle}>SUA NOTA (1 A 5)</label>
       <input type="number" min="1" max="5" style={inputStyle} value={form.rating} onChange={e => setForm({...form, rating: e.target.value})} />
 
       <label style={labelStyle}>NOTAS SENSORIAIS</label>
       <textarea style={{ ...inputStyle, height: '80px', resize: 'none' }} value={form.notes} onChange={e => setForm({...form, notes: e.target.value})}></textarea>
 
-      <button type="submit" disabled={uploading} style={{ width: '100%', background: theme.primary, color: 'white', border: 'none', padding: '16px', borderRadius: '15px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', boxShadow: '0 5px 15px rgba(111, 78, 55, 0.2)' }}>
-        {uploading ? 'Salvando...' : mode === 'edit' ? 'Atualizar Review' : 'Finalizar Review'}
+      <button type="submit" disabled={uploading} style={{ width: '100%', background: theme.primary, color: 'white', border: 'none', padding: '16px', borderRadius: '15px', fontWeight: 'bold', cursor: 'pointer' }}>
+        {uploading ? 'Aguarde...' : 'Salvar Review'}
       </button>
     </form>
   )
