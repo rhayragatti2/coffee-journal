@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient'
 import { 
   Plus, Star, ArrowLeft, Bean, Droplets, Camera, 
   Loader2, Flame, Trash2, Edit3, Search, 
-  Heart, LayoutGrid, BarChart3, BookOpen, Clock, Coffee, ChevronRight, Play, Pause, RotateCcw
+  Heart, LayoutGrid, BarChart3, Clock, Coffee, ChevronRight, Play, Pause, RotateCcw, Package, ShoppingCart, CheckCircle2
 } from 'lucide-react'
 
 const theme = {
@@ -59,7 +59,7 @@ export default function App() {
             )}
             {activeTab === 'stats' && <StatsTab reviews={reviews} />}
             {activeTab === 'brew' && <BrewToolsTab />}
-            {activeTab === 'guide' && <GuideTab />}
+            {activeTab === 'pantry' && <PantryTab />}
           </>
         ) : (
           <ReviewForm 
@@ -89,7 +89,7 @@ export default function App() {
           }}><Plus size={28} /></button>
 
           <NavButton icon={<Clock size={22}/>} label="Preparo" active={activeTab === 'brew'} onClick={() => setActiveTab('brew')} />
-          <NavButton icon={<BookOpen size={22}/>} label="Guias" active={activeTab === 'guide'} onClick={() => setActiveTab('guide')} />
+          <NavButton icon={<Package size={22}/>} label="Despensa" active={activeTab === 'pantry'} onClick={() => setActiveTab('pantry')} />
         </nav>
       )}
     </div>
@@ -106,6 +106,7 @@ function NavButton({ icon, label, active, onClick }) {
   )
 }
 
+// --- ABA HOME (Reviews) ---
 function HomeTab({ reviews, searchTerm, setSearchTerm, onEdit, onDelete, onToggleFavorite }) {
   return (
     <>
@@ -163,6 +164,96 @@ function ReviewCard({ review, onEdit, onDelete, onToggleFavorite }) {
   )
 }
 
+// --- ABA DESPENSA (Inventário + Wishlist) ---
+function PantryTab() {
+  const [items, setItems] = useState([]);
+  const [wishlist, setWishlist] = useState([]);
+  const [newItemName, setNewItemName] = useState('');
+  const [wishInput, setWishInput] = useState('');
+
+  useEffect(() => { fetchPantry(); fetchWishlist(); }, []);
+
+  async function fetchPantry() {
+    const { data } = await supabase.from('inventory').select('*').order('created_at', { ascending: false });
+    if (data) setItems(data);
+  }
+
+  async function fetchWishlist() {
+    const { data } = await supabase.from('wishlist').select('*').order('created_at', { ascending: false });
+    if (data) setWishlist(data);
+  }
+
+  async function addInventory() {
+    if (!newItemName) return;
+    await supabase.from('inventory').insert([{ name: newItemName, brand: '', weight_total: 250, weight_current: 250 }]);
+    setNewItemName('');
+    fetchPantry();
+  }
+
+  async function addWish() {
+    if (!wishInput) return;
+    await supabase.from('wishlist').insert([{ item_name: wishInput }]);
+    setWishInput('');
+    fetchWishlist();
+  }
+
+  async function deleteWish(id) {
+    await supabase.from('wishlist').delete().eq('id', id);
+    fetchWishlist();
+  }
+
+  async function updateWeight(id, newWeight) {
+    await supabase.from('inventory').update({ weight_current: Math.max(0, newWeight) }).eq('id', id);
+    fetchPantry();
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+      <section>
+        <h2 style={{ fontSize: '1.3rem', color: theme.primary, marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}><Package size={22}/> Estoque de Grãos</h2>
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+          <input style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none' }} placeholder="Novo café na despensa..." value={newItemName} onChange={e => setNewItemName(e.target.value)} />
+          <button onClick={addInventory} style={{ background: theme.primary, color: 'white', border: 'none', padding: '12px', borderRadius: '12px' }}><Plus/></button>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {items.map(item => (
+            <div key={item.id} style={{ background: 'white', padding: '15px', borderRadius: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <span style={{ fontWeight: 'bold' }}>{item.name}</span>
+                <span style={{ fontSize: '0.8rem', color: theme.secondary }}>{item.weight_current}g / {item.weight_total}g</span>
+              </div>
+              <div style={{ width: '100%', height: '8px', background: '#F0F0F0', borderRadius: '10px', marginBottom: '15px' }}>
+                <div style={{ width: `${(item.weight_current / item.weight_total) * 100}%`, height: '100%', background: theme.secondary, borderRadius: '10px' }}></div>
+              </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={() => updateWeight(item.id, item.weight_current - 15)} style={{ flex: 1, padding: '6px', borderRadius: '8px', border: '1px solid #EEE', background: 'none', fontSize: '0.7rem' }}>-15g (1 dose)</button>
+                <button onClick={async () => { if(confirm("Remover?")) { await supabase.from('inventory').delete().eq('id', item.id); fetchPantry(); } }} style={{ padding: '6px', borderRadius: '8px', border: 'none', background: '#f8d7da', color: '#721c24' }}><Trash2 size={14}/></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section style={{ background: '#FFF7ED', padding: '20px', borderRadius: '25px', border: '1px dashed #ECB159' }}>
+        <h2 style={{ fontSize: '1.3rem', color: theme.primary, marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}><ShoppingCart size={22}/> Lista de Desejos</h2>
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+          <input style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #ECB15944', outline: 'none' }} placeholder="Café ou acessório..." value={wishInput} onChange={e => setWishInput(e.target.value)} />
+          <button onClick={addWish} style={{ background: theme.accent, color: 'white', border: 'none', padding: '10px', borderRadius: '10px' }}><Plus/></button>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {wishlist.map(wish => (
+            <div key={wish.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '10px 15px', borderRadius: '12px', fontSize: '0.9rem' }}>
+              <span>{wish.item_name}</span>
+              <button onClick={() => deleteWish(wish.id)} style={{ background: 'none', border: 'none', color: theme.secondary }}><CheckCircle2 size={18}/></button>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  )
+}
+
+// --- ABA PREPARO (Timer + Calculadora) ---
 function BrewToolsTab() {
   const [coffee, setCoffee] = useState(15);
   const [ratio, setRatio] = useState(15);
@@ -211,6 +302,7 @@ function BrewToolsTab() {
   );
 }
 
+// --- ABA STATS ---
 function StatsTab({ reviews }) {
   const total = reviews.length;
   const favs = reviews.filter(r => r.is_favorite).length;
@@ -246,23 +338,7 @@ function StatsTab({ reviews }) {
   )
 }
 
-function GuideTab() {
-  const guides = [{ name: 'Hario V60', ratio: '1:15', grind: 'Média-Fina' }, { name: 'Prensa Francesa', ratio: '1:12', grind: 'Grossa' }, { name: 'Aeropress', ratio: '1:13', grind: 'Média' }];
-  return (
-    <div>
-      <h2 style={{ fontSize: '1.3rem', color: theme.primary, marginBottom: '20px' }}>Guias</h2>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {guides.map(g => (
-          <div key={g.name} style={{ background: 'white', padding: '15px', borderRadius: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.02)' }}>
-            <div><h4 style={{ margin: 0 }}>{g.name}</h4><p style={{ margin: 0, fontSize: '0.7rem', color: theme.secondary }}>{g.grind} • {g.ratio}</p></div>
-            <ChevronRight size={16} color={theme.secondary} />
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
+// --- FORMULÁRIO (ADD/EDIT) ---
 function ReviewForm({ mode, initialData, onSave, onCancel }) {
   const [form, setForm] = useState(initialData || { 
     coffee_name: '', brand: '', origin: '', brew_method: 'Coado (V60/Melitta)', 
