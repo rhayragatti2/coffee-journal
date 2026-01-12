@@ -20,7 +20,6 @@ export default function App() {
   useEffect(() => { fetchReviews() }, [])
 
   async function fetchReviews() {
-    // Ordena por favoritos primeiro, depois por data de criação
     const { data } = await supabase
       .from('reviews')
       .select('*')
@@ -121,35 +120,57 @@ export default function App() {
 }
 
 function ReviewCard({ review, onEdit, onDelete, onToggleFavorite }) {
+  const hasImage = !!review.image_url;
+
   return (
     <div style={{ background: theme.card, borderRadius: '25px', overflow: 'hidden', boxShadow: '0 8px 20px rgba(0,0,0,0.04)', marginBottom: '5px', position: 'relative' }}>
-      {review.image_url && <img src={review.image_url} alt="Café" style={{ width: '100%', height: '250px', objectFit: 'cover' }} />}
+      {hasImage && <img src={review.image_url} alt="Café" style={{ width: '100%', height: '250px', objectFit: 'cover' }} />}
       
-      {/* Botão de Favorito (Coração) no canto superior esquerdo da imagem/card */}
-      <button 
-        onClick={onToggleFavorite}
-        style={{ position: 'absolute', top: '15px', left: '15px', background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', zIndex: 10 }}
-      >
-        <Heart size={18} fill={review.is_favorite ? "#d9534f" : "none"} color={review.is_favorite ? "#d9534f" : theme.secondary} />
-      </button>
+      {/* Container de Ações: Muda de Absolute para Relative se não tiver imagem */}
+      <div style={{ 
+        position: hasImage ? 'absolute' : 'relative', 
+        top: hasImage ? '15px' : '0', 
+        left: '0',
+        right: '0',
+        padding: hasImage ? '0 15px' : '20px 20px 0 20px',
+        display: 'flex', 
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        zIndex: 10 
+      }}>
+        <button 
+          onClick={onToggleFavorite}
+          style={{ background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+        >
+          <Heart size={18} fill={review.is_favorite ? "#d9534f" : "none"} color={review.is_favorite ? "#d9534f" : theme.secondary} />
+        </button>
 
-      <div style={{ position: 'absolute', top: '15px', right: '15px', display: 'flex', alignItems: 'center', gap: '10px', zIndex: 10 }}>
-        <div style={{ color: theme.accent, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.9)', padding: '6px 12px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-          {review.rating} <Star size={14} fill={theme.accent} stroke="none" />
-        </div>
-
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={onEdit} style={{ background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%', cursor: 'pointer', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-            <Edit3 size={16} color={theme.primary} />
-          </button>
-          <button onClick={onDelete} style={{ background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%', cursor: 'pointer', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-            <Trash2 size={16} color="#d9534f" />
-          </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <div style={{ color: theme.accent, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.9)', padding: '6px 12px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+            {review.rating} <Star size={14} fill={theme.accent} stroke="none" />
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={onEdit} style={{ background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%', cursor: 'pointer', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+              <Edit3 size={16} color={theme.primary} />
+            </button>
+            <button onClick={onDelete} style={{ background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%', cursor: 'pointer', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+              <Trash2 size={16} color="#d9534f" />
+            </button>
+          </div>
         </div>
       </div>
 
-      <div style={{ padding: '20px' }}>
-        <h3 style={{ margin: 0, fontSize: '1.2rem', paddingRight: '130px', wordBreak: 'break-word' }}>{review.coffee_name}</h3>
+      <div style={{ padding: hasImage ? '20px' : '10px 20px 20px 20px' }}>
+        {/* Título: Se não tiver imagem, ganha um padding left para não encostar no coração se ele fosse absoluto, 
+            mas aqui tratamos com o flexbox acima para garantir separação. */}
+        <h3 style={{ 
+          margin: 0, 
+          fontSize: '1.2rem', 
+          wordBreak: 'break-word',
+          marginTop: hasImage ? '0' : '10px'
+        }}>
+          {review.coffee_name}
+        </h3>
         <p style={{ margin: '4px 0', color: theme.secondary, fontSize: '0.9rem', fontWeight: '500', wordBreak: 'break-word' }}>{review.brand} • {review.origin}</p>
         
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '18px', fontSize: '0.8rem' }}>
