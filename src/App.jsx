@@ -153,8 +153,20 @@ function ReviewCard({ review, onEdit, onDelete, onToggleFavorite }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Flame size={14} color={theme.secondary}/> Torra: {review.roast_level}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Coffee size={14} color={theme.secondary}/> {review.brew_method}</div>
         </div>
+        {/* CORREÇÃO DO WRAP DE TEXTO AQUI */}
         {review.notes && (
-          <div style={{ marginTop: '15px', padding: '10px', background: '#F9F9F9', borderRadius: '12px', borderLeft: `3px solid ${theme.accent}`, fontSize: '0.8rem', fontStyle: 'italic' }}>
+          <div style={{ 
+            marginTop: '15px', 
+            padding: '12px', 
+            background: '#F9F9F9', 
+            borderRadius: '12px', 
+            borderLeft: `3px solid ${theme.accent}`, 
+            fontSize: '0.85rem', 
+            fontStyle: 'italic',
+            wordBreak: 'break-word',
+            overflowWrap: 'break-word',
+            whiteSpace: 'pre-wrap'
+          }}>
             "{review.notes}"
           </div>
         )}
@@ -224,7 +236,6 @@ function PantryTab() {
                 <div style={{ width: `${(item.weight_current / item.weight_total) * 100}%`, height: '100%', background: theme.secondary, borderRadius: '10px' }}></div>
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
-                {/* AJUSTADO PARA 18G */}
                 <button onClick={() => updateWeight(item.id, item.weight_current - 18)} style={{ flex: 1, padding: '6px', borderRadius: '8px', border: '1px solid #EEE', background: 'none', fontSize: '0.7rem' }}>-18g (1 dose)</button>
                 <button onClick={async () => { if(confirm("Remover?")) { await supabase.from('inventory').delete().eq('id', item.id); fetchPantry(); } }} style={{ padding: '6px', borderRadius: '8px', border: 'none', background: '#f8d7da', color: '#721c24' }}><Trash2 size={14}/></button>
               </div>
@@ -253,7 +264,6 @@ function PantryTab() {
 }
 
 function BrewToolsTab() {
-  {/* INICIA AGORA COM 18G */}
   const [coffee, setCoffee] = useState(18);
   const [ratio, setRatio] = useState(15);
   const [time, setTime] = useState(0);
