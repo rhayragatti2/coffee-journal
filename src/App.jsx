@@ -149,21 +149,38 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
   const cameraInputRef = useRef(null)
 
   async function handleFileUpload(e) {
-    try {
-      const file = e.target.files[0]
-      if (!file) return
-      setUploading(true)
-      const fileName = `${Math.random()}.${file.name.split('.').pop()}`
-      let { error: uploadError } = await supabase.storage.from('coffee-images').upload(fileName, file)
-      if (uploadError) throw uploadError
-      const { data } = supabase.storage.from('coffee-images').getPublicUrl(fileName)
-      setForm({ ...form, image_url: data.publicUrl })
-    } catch (error) {
-      alert('Erro no upload!')
-    } finally {
-      setUploading(false)
-    }
+  try {
+    const file = e.target.files[0]
+    if (!file) return
+    
+    setUploading(true)
+    
+    // Gera um nome único usando timestamp + número aleatório
+    const fileExt = file.name ? file.name.split('.').pop() : 'jpg'
+    const fileName = `${Date.now()}-${Math.floor(Math.random() * 1000)}.${fileExt}`
+    const filePath = fileName
+
+    let { error: uploadError } = await supabase.storage
+      .from('coffee-images')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      })
+
+    if (uploadError) throw uploadError
+
+    const { data } = supabase.storage
+      .from('coffee-images')
+      .getPublicUrl(filePath)
+      
+    setForm({ ...form, image_url: data.publicUrl })
+  } catch (error) {
+    console.error('Erro detalhado:', error)
+    alert('Erro no upload! Verifique se o Bucket "coffee-images" é público no Supabase.')
+  } finally {
+    setUploading(false)
   }
+}
 
   async function handleSubmit(e) {
     e.preventDefault()
