@@ -198,4 +198,11 @@ function StatsTab({ reviews }) {
         </div>
       </div>
       <p style={{ textAlign: 'center', marginTop: '30px', color: theme.secondary, fontStyle: 'italic', fontSize: '0.8rem' }}>
-        Em breve: Gráficos de métodos e histórico
+        Em breve: Gráficos de métodos e histórico de aprendizado.
+      </p>
+    </div>
+  )
+}
+
+// (Mantenha os componentes ReviewCard e ReviewForm que já corrigimos anteriormente)
+// Nota: Certifique-se de que o ReviewCard usa o layout corrigido para quando não há imagem.
