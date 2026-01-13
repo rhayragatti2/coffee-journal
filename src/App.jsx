@@ -3,7 +3,8 @@ import { supabase } from './supabaseClient'
 import { 
   Plus, Star, ArrowLeft, Bean, Droplets, Camera, 
   Loader2, Flame, Trash2, Edit3, Search, 
-  Heart, LayoutGrid, BarChart3, Clock, Coffee, Package, ShoppingCart, CheckCircle2, Pause, Play, RotateCcw
+  Heart, LayoutGrid, BarChart3, Clock, Coffee, Package, ShoppingCart, CheckCircle2, Pause, Play, RotateCcw,
+  ChevronRight, BrainCircuit
 } from 'lucide-react'
 
 const theme = {
@@ -14,6 +15,15 @@ const theme = {
   card: '#FFFFFF',
   text: '#3C2A21'
 }
+
+// DEFINIÇÃO DA RODA DE SABORES (SCAA Simpificada)
+const flavorWheel = {
+  "Frutado": ["Cítrico", "Frutas Vermelhas", "Frutas Tropicais", "Secas"],
+  "Floral": ["Jasmim", "Rosa", "Chá Preto"],
+  "Doce": ["Chocolate", "Caramelo", "Mel", "Baunilha"],
+  "Castanhas": ["Amêndoa", "Avelã", "Amendoim"],
+  "Especiarias": ["Canela", "Cravo", "Noz-moscada"]
+};
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home') 
@@ -71,7 +81,7 @@ export default function App() {
         )}
       </div>
 
-      {/* NAVEGAÇÃO INFERIOR ALINHADA */}
+      {/* NAVEGAÇÃO INFERIOR */}
       {view === 'list' && (
         <nav style={{
           position: 'fixed', bottom: 0, left: 0, right: 0, height: '80px',
@@ -233,7 +243,6 @@ function PantryTab() {
         </div>
       </section>
 
-      {/* WISHLIST RESTAURADA */}
       <section style={{ background: '#FFF7ED', padding: '20px', borderRadius: '25px', border: '1px dashed #ECB159' }}>
         <h2 style={{ fontSize: '1.3rem', color: theme.primary, marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}><ShoppingCart size={22}/> Wishlist</h2>
         <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
@@ -256,7 +265,7 @@ function PantryTab() {
 function BrewToolsTab() {
   const [water, setWater] = useState(250);
   const [ratio, setRatio] = useState(15);
-  const [coffeeInput, setCoffeeInput] = useState(18); // Dose padrão
+  const [coffeeInput, setCoffeeInput] = useState(18); 
   
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
@@ -326,12 +335,39 @@ function BrewToolsTab() {
   );
 }
 
+// COMPONENTE STATS COM "CURVA DE APRENDIZADO"
 function StatsTab({ reviews }) {
   const total = reviews.length;
   const avgRating = total > 0 ? (reviews.reduce((acc, r) => acc + Number(r.rating), 0) / total).toFixed(1) : 0;
+
+  // Lógica da Curva de Aprendizado
+  const getInsight = () => {
+    if (total < 3) return "Continue avaliando para gerar insights sobre seu paladar.";
+    
+    // Agrupar por torra
+    const roastStats = reviews.reduce((acc, r) => {
+      acc[r.roast_level] = (acc[r.roast_level] || { sum: 0, count: 0 });
+      acc[r.roast_level].sum += Number(r.rating);
+      acc[r.roast_level].count += 1;
+      return acc;
+    }, {});
+
+    const topRoast = Object.entries(roastStats).sort((a, b) => (b[1].sum/b[1].count) - (a[1].sum/a[1].count))[0];
+    
+    return `Você tende a preferir cafés de Torra ${topRoast[0]}, com nota média de ${(topRoast[1].sum/topRoast[1].count).toFixed(1)}.`;
+  };
+
   return (
     <div>
       <h2 style={{ fontSize: '1.5rem', color: theme.primary, marginBottom: '20px', fontWeight: '800' }}>O Seu Perfil</h2>
+      
+      {/* CURVA DE APRENDIZADO (INSIGHT) */}
+      <div style={{ background: 'linear-gradient(135deg, #6F4E37 0%, #3C2A21 100%)', padding: '20px', borderRadius: '25px', marginBottom: '25px', color: 'white', position: 'relative', overflow: 'hidden' }}>
+        <BrainCircuit size={40} style={{ position: 'absolute', right: '-10px', top: '-10px', opacity: 0.2 }} />
+        <h3 style={{ fontSize: '0.8rem', margin: '0 0 10px 0', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '1px' }}>Insight do Sommelier</h3>
+        <p style={{ margin: 0, fontSize: '0.95rem', fontWeight: '500', lineHeight: '1.4' }}>{getInsight()}</p>
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
         <div style={{ background: 'white', padding: '20px', borderRadius: '25px', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
           <span style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>TOTAL</span>
@@ -346,14 +382,26 @@ function StatsTab({ reviews }) {
   )
 }
 
+// FORMULÁRIO COM RODA DE SABORES INTERATIVA
 function ReviewForm({ mode, initialData, onSave, onCancel }) {
   const [form, setForm] = useState(initialData || { 
     coffee_name: '', brand: '', origin: '', brew_method: 'Coado (V60/Melitta)', 
     roast_level: 'Média', rating: 5, notes: '', image_url: '', acidity: 3, body: 3, is_favorite: false 
   })
+  
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef(null)
+
   const inputStyle = { width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #EEE', outline: 'none', boxSizing: 'border-box' }
+
+  const toggleNote = (note) => {
+    const currentNotes = form.notes ? form.notes.split(', ') : [];
+    const newNotes = currentNotes.includes(note) 
+      ? currentNotes.filter(n => n !== note)
+      : [...currentNotes, note];
+    setForm({...form, notes: newNotes.join(', ')});
+  }
 
   async function handleFileUpload(e) {
     const file = e.target.files[0];
@@ -377,13 +425,41 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
   return (
     <form onSubmit={handleSubmit} style={{ background: 'white', padding: '20px', borderRadius: '25px' }}>
       <button type="button" onClick={onCancel} style={{ background: 'none', border: 'none', marginBottom: '15px' }}><ArrowLeft /></button>
+      
       <div onClick={() => fileInputRef.current.click()} style={{ width: '100%', height: '180px', background: '#F5F5F5', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', overflow: 'hidden', cursor: 'pointer' }}>
         {form.image_url ? <img src={form.image_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : uploading ? <Loader2 className="animate-spin" /> : <Camera color="#CCC" />}
       </div>
       <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload} />
+      
       <input style={inputStyle} placeholder="Nome do Café" required value={form.coffee_name} onChange={e => setForm({...form, coffee_name: e.target.value})} />
-      <input style={inputStyle} placeholder="Marca" value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} />
-      <input style={inputStyle} placeholder="Origem" value={form.origin} onChange={e => setForm({...form, origin: e.target.value})} />
+      
+      {/* RODA DE SABORES INTERATIVA */}
+      <div style={{ marginBottom: '20px', padding: '15px', background: '#FDFBF7', borderRadius: '15px', border: '1px solid #EEE' }}>
+        <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold', display: 'block', marginBottom: '10px' }}>GUIA DE SABORES</label>
+        
+        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '10px' }}>
+          {Object.keys(flavorWheel).map(cat => (
+            <button key={cat} type="button" 
+              onClick={() => setSelectedCategory(cat === selectedCategory ? null : cat)}
+              style={{ padding: '6px 12px', borderRadius: '20px', border: 'none', background: selectedCategory === cat ? theme.primary : '#EEE', color: selectedCategory === cat ? 'white' : theme.text, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {selectedCategory && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px', padding: '10px', background: 'white', borderRadius: '10px' }}>
+            {flavorWheel[selectedCategory].map(note => (
+              <button key={note} type="button" onClick={() => toggleNote(note)}
+                style={{ padding: '4px 10px', borderRadius: '8px', border: `1px solid ${form.notes.includes(note) ? theme.accent : '#EEE'}`, background: form.notes.includes(note) ? '#FFF7ED' : 'none', color: theme.text, fontSize: '0.75rem' }}>
+                {note}
+              </button>
+            ))}
+          </div>
+        )}
+        <textarea style={{ ...inputStyle, minHeight: '60px', marginTop: '10px', fontSize: '0.85rem' }} placeholder="Notas selecionadas..." value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} />
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
         <div>
           <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>ACIDEZ (1-5)</label>
@@ -394,20 +470,24 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
           <input type="number" min="1" max="5" style={inputStyle} value={form.body} onChange={e => setForm({...form, body: e.target.value})} />
         </div>
       </div>
+
       <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>MÉTODO</label>
       <select style={inputStyle} value={form.brew_method} onChange={e => setForm({...form, brew_method: e.target.value})}>
         <option>Coado (V60/Melitta)</option><option>Prensa Francesa</option><option>Espresso</option><option>Aeropress</option><option>Moka</option>
       </select>
+
       <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>TORRA</label>
       <select style={inputStyle} value={form.roast_level} onChange={e => setForm({...form, roast_level: e.target.value})}>
         <option>Clara</option><option>Média</option><option>Escura</option>
       </select>
+
       <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>NOTA (1-5)</label>
       <input type="number" min="1" max="5" style={inputStyle} value={form.rating} onChange={e => setForm({...form, rating: e.target.value})} />
-      <textarea style={{ ...inputStyle, minHeight: '80px' }} placeholder="Notas de degustação..." value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} />
+
       <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
         <input type="checkbox" checked={form.is_favorite} onChange={e => setForm({...form, is_favorite: e.target.checked})} /> Favorito ❤️
       </label>
+      
       <button type="submit" disabled={uploading} style={{ width: '100%', background: theme.primary, color: 'white', border: 'none', padding: '15px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
         {uploading ? 'Salvando...' : 'Salvar Review'}
       </button>
