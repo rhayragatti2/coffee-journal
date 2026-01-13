@@ -4,7 +4,7 @@ import {
   Plus, Star, ArrowLeft, Bean, Droplets, Camera, 
   Loader2, Flame, Trash2, Edit3, Search, 
   Heart, LayoutGrid, BarChart3, Clock, Coffee, Package, ShoppingCart, CheckCircle2, Pause, Play, RotateCcw,
-  BrainCircuit, ChevronLeft, ChevronRight, Wind
+  BrainCircuit, ChevronLeft, ChevronRight
 } from 'lucide-react'
 
 const theme = {
@@ -29,8 +29,8 @@ const flavorWheel = {
 // COMPONENTE DO GRÁFICO RADAR (SVG)
 function RadarChart({ data, size = 150, showLabels = true }) {
   const points = [
-    { label: "Acidez", value: data.acidity },
-    { label: "Corpo", value: data.body },
+    { label: "Acidez", value: data.acidity || 3 },
+    { label: "Corpo", value: data.body || 3 },
     { label: "Doçura", value: data.sweetness || 3 },
     { label: "Amargor", value: data.bitterness || 2 },
     { label: "Aroma", value: data.aroma || 4 }
@@ -57,7 +57,6 @@ function RadarChart({ data, size = 150, showLabels = true }) {
   return (
     <div style={{ position: 'relative', width: size, height: size, margin: '0 auto' }}>
       <svg width={size} height={size} style={{ overflow: 'visible' }}>
-        {/* Teia de fundo */}
         {[1, 2, 3, 4, 5].map(tick => (
           <polygon key={tick}
             points={points.map((_, i) => {
@@ -67,14 +66,11 @@ function RadarChart({ data, size = 150, showLabels = true }) {
             fill="none" stroke="#EEE" strokeWidth="1"
           />
         ))}
-        {/* Eixos */}
         {points.map((_, i) => {
           const { x, y } = getCoordinates(5, i);
           return <line key={i} x1={center} y1={center} x2={x} y2={y} stroke="#EEE" />;
         })}
-        {/* Área preenchida */}
         <path d={pathData} fill={`${theme.accent}44`} stroke={theme.accent} strokeWidth="2" />
-        {/* Labels */}
         {showLabels && points.map((p, i) => {
           const { x, y } = getCoordinates(5.8, i);
           return (
@@ -218,7 +214,7 @@ function ReviewCard({ review, onEdit, onDelete, onToggleFavorite }) {
       </div>
 
       <div style={{ padding: '5px 20px 20px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <h3 style={{ margin: 0, fontSize: '1.2rem' }}>{review.coffee_name}</h3>
           <p style={{ margin: '4px 0 15px 0', color: theme.secondary, fontSize: '0.85rem' }}>{review.brand} • {review.origin}</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px', fontSize: '0.8rem', color: '#666' }}>
@@ -226,16 +222,23 @@ function ReviewCard({ review, onEdit, onDelete, onToggleFavorite }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Coffee size={14} color={theme.secondary}/> {review.brew_method}</div>
           </div>
         </div>
-        {/* MINI RADAR NO CARD */}
-        <div style={{ marginLeft: '10px', opacity: 0.8 }}>
+        <div style={{ marginLeft: '10px', opacity: 0.8, flexShrink: 0 }}>
           <RadarChart data={review} size={100} showLabels={false} />
         </div>
       </div>
 
       {review.notes && (
         <div style={{ 
-          margin: '0 20px 20px 20px', padding: '12px', background: '#F9F9F9', borderRadius: '12px', 
-          borderLeft: `3px solid ${theme.accent}`, fontSize: '0.85rem', fontStyle: 'italic'
+          margin: '0 20px 20px 20px', 
+          padding: '12px', 
+          background: '#F9F9F9', 
+          borderRadius: '12px', 
+          borderLeft: `3px solid ${theme.accent}`, 
+          fontSize: '0.85rem', 
+          fontStyle: 'italic',
+          wordBreak: 'break-word',
+          overflowWrap: 'break-word',
+          whiteSpace: 'pre-wrap'
         }}>
           "{review.notes}"
         </div>
@@ -331,7 +334,6 @@ function BrewToolsTab() {
   const [water, setWater] = useState(250);
   const [ratio, setRatio] = useState(15);
   const [coffeeInput, setCoffeeInput] = useState(18); 
-  
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef(null);
@@ -488,19 +490,24 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
       
       <input style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #EEE' }} placeholder="Nome do Café" required value={form.coffee_name} onChange={e => setForm({...form, coffee_name: e.target.value})} />
       
-      {/* GRÁFICO RADAR NO FORMULÁRIO */}
       <div style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#FDFBF7', borderRadius: '20px', border: '1px solid #EEE' }}>
         <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: theme.secondary, display: 'block', marginBottom: '20px', textAlign: 'center' }}>PERFIL SENSORIAL</label>
         <RadarChart data={form} size={200} />
         
         <div style={{ marginTop: '30px' }}>
-          {['acidity', 'body', 'sweetness', 'bitterness', 'aroma'].map(attr => (
-            <div key={attr}>
+          {[
+            { key: 'acidity', label: 'Acidez' },
+            { key: 'body', label: 'Corpo' },
+            { key: 'sweetness', label: 'Doçura' },
+            { key: 'bitterness', label: 'Amargor' },
+            { key: 'aroma', label: 'Aroma' }
+          ].map(attr => (
+            <div key={attr.key}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', fontWeight: 'bold' }}>
-                <span style={{ textTransform: 'uppercase' }}>{attr === 'acidity' ? 'Acidez' : attr === 'body' ? 'Corpo' : attr === 'sweetness' ? 'Doçura' : attr === 'bitterness' ? 'Amargor' : 'Aroma'}</span>
-                <span>{form[attr]}/5</span>
+                <span style={{ textTransform: 'uppercase' }}>{attr.label}</span>
+                <span>{form[attr.key]}/5</span>
               </div>
-              <input type="range" min="1" max="5" step="0.5" value={form[attr]} onChange={e => setForm({...form, [attr]: Number(e.target.value)})} style={sliderStyle} />
+              <input type="range" min="1" max="5" step="0.5" value={form[attr.key]} onChange={e => setForm({...form, [attr.key]: Number(e.target.value)})} style={sliderStyle} />
             </div>
           ))}
         </div>
