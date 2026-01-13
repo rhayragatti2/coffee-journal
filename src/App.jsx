@@ -4,7 +4,7 @@ import {
   Plus, Star, ArrowLeft, Bean, Droplets, Camera, 
   Loader2, Flame, Trash2, Edit3, Search, 
   Heart, LayoutGrid, BarChart3, Clock, Coffee, Package, ShoppingCart, CheckCircle2, Pause, Play, RotateCcw,
-  BrainCircuit, ChevronLeft, ChevronRight
+  BrainCircuit, ChevronLeft, ChevronRight, Wind
 } from 'lucide-react'
 
 const theme = {
@@ -16,7 +16,6 @@ const theme = {
   text: '#3C2A21'
 }
 
-// 1. RODA DE SABORES (SCAA FLAVOR WHEEL SIMPLIFICADA)
 const flavorWheel = {
   "Frutado": ["Limão", "Laranja", "Maçã Verde", "Morango", "Mirtilo", "Uva", "Pêssego", "Manga"],
   "Floral": ["Jasmim", "Flor de Laranjeira", "Rosa", "Hibisco", "Chá Verde"],
@@ -26,6 +25,68 @@ const flavorWheel = {
   "Especiarias": ["Canela", "Cravo", "Noz-moscada", "Cardamomo", "Pimenta"],
   "Fermentado": ["Vinho Tinto", "Whisky", "Frutas Passas", "Cerveja Artesanal"]
 };
+
+// COMPONENTE DO GRÁFICO RADAR (SVG)
+function RadarChart({ data, size = 150, showLabels = true }) {
+  const points = [
+    { label: "Acidez", value: data.acidity },
+    { label: "Corpo", value: data.body },
+    { label: "Doçura", value: data.sweetness || 3 },
+    { label: "Amargor", value: data.bitterness || 2 },
+    { label: "Aroma", value: data.aroma || 4 }
+  ];
+
+  const center = size / 2;
+  const radius = (size / 2) * 0.7;
+  const angleStep = (Math.PI * 2) / points.length;
+
+  const getCoordinates = (val, i) => {
+    const r = (val / 5) * radius;
+    const angle = i * angleStep - Math.PI / 2;
+    return {
+      x: center + r * Math.cos(angle),
+      y: center + r * Math.sin(angle)
+    };
+  };
+
+  const pathData = points.map((p, i) => {
+    const { x, y } = getCoordinates(p.value, i);
+    return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+  }).join(' ') + ' Z';
+
+  return (
+    <div style={{ position: 'relative', width: size, height: size, margin: '0 auto' }}>
+      <svg width={size} height={size} style={{ overflow: 'visible' }}>
+        {/* Teia de fundo */}
+        {[1, 2, 3, 4, 5].map(tick => (
+          <polygon key={tick}
+            points={points.map((_, i) => {
+              const { x, y } = getCoordinates(tick, i);
+              return `${x},${y}`;
+            }).join(' ')}
+            fill="none" stroke="#EEE" strokeWidth="1"
+          />
+        ))}
+        {/* Eixos */}
+        {points.map((_, i) => {
+          const { x, y } = getCoordinates(5, i);
+          return <line key={i} x1={center} y1={center} x2={x} y2={y} stroke="#EEE" />;
+        })}
+        {/* Área preenchida */}
+        <path d={pathData} fill={`${theme.accent}44`} stroke={theme.accent} strokeWidth="2" />
+        {/* Labels */}
+        {showLabels && points.map((p, i) => {
+          const { x, y } = getCoordinates(5.8, i);
+          return (
+            <text key={i} x={x} y={y} fontSize="10" fontWeight="bold" fill={theme.secondary} textAnchor="middle" dominantBaseline="middle">
+              {p.label}
+            </text>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home') 
@@ -142,6 +203,7 @@ function ReviewCard({ review, onEdit, onDelete, onToggleFavorite }) {
   return (
     <div style={{ background: theme.card, borderRadius: '25px', overflow: 'hidden', boxShadow: '0 8px 20px rgba(0,0,0,0.04)', position: 'relative' }}>
       {hasImage && <img src={review.image_url} alt="Café" style={{ width: '100%', height: '220px', objectFit: 'cover' }} />}
+      
       <div style={{ position: hasImage ? 'absolute' : 'relative', top: hasImage ? '15px' : '0', padding: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', boxSizing: 'border-box', zIndex: 10 }}>
         <button onClick={onToggleFavorite} style={{ background: 'white', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer' }}>
           <Heart size={18} fill={review.is_favorite ? "#d9534f" : "none"} color={review.is_favorite ? "#d9534f" : theme.secondary} />
@@ -154,25 +216,30 @@ function ReviewCard({ review, onEdit, onDelete, onToggleFavorite }) {
           <button onClick={onDelete} style={{ background: 'white', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer' }}><Trash2 size={14} color="#d9534f" /></button>
         </div>
       </div>
-      <div style={{ padding: '5px 20px 20px 20px' }}>
-        <h3 style={{ margin: 0, fontSize: '1.2rem' }}>{review.coffee_name}</h3>
-        <p style={{ margin: '4px 0 15px 0', color: theme.secondary, fontSize: '0.85rem' }}>{review.brand} • {review.origin}</p>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.8rem', color: '#666' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Droplets size={14} color={theme.secondary}/> Acidez: {review.acidity}/5</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Bean size={14} color={theme.secondary}/> Corpo: {review.body}/5</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Flame size={14} color={theme.secondary}/> Torra: {review.roast_level}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Coffee size={14} color={theme.secondary}/> {review.brew_method}</div>
-        </div>
-        {review.notes && (
-          <div style={{ 
-            marginTop: '15px', padding: '12px', background: '#F9F9F9', borderRadius: '12px', 
-            borderLeft: `3px solid ${theme.accent}`, fontSize: '0.85rem', fontStyle: 'italic',
-            wordBreak: 'break-word', overflowWrap: 'break-word', whiteSpace: 'pre-wrap'
-          }}>
-            "{review.notes}"
+
+      <div style={{ padding: '5px 20px 20px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ flex: 1 }}>
+          <h3 style={{ margin: 0, fontSize: '1.2rem' }}>{review.coffee_name}</h3>
+          <p style={{ margin: '4px 0 15px 0', color: theme.secondary, fontSize: '0.85rem' }}>{review.brand} • {review.origin}</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px', fontSize: '0.8rem', color: '#666' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Flame size={14} color={theme.secondary}/> Torra: {review.roast_level}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Coffee size={14} color={theme.secondary}/> {review.brew_method}</div>
           </div>
-        )}
+        </div>
+        {/* MINI RADAR NO CARD */}
+        <div style={{ marginLeft: '10px', opacity: 0.8 }}>
+          <RadarChart data={review} size={100} showLabels={false} />
+        </div>
       </div>
+
+      {review.notes && (
+        <div style={{ 
+          margin: '0 20px 20px 20px', padding: '12px', background: '#F9F9F9', borderRadius: '12px', 
+          borderLeft: `3px solid ${theme.accent}`, fontSize: '0.85rem', fontStyle: 'italic'
+        }}>
+          "{review.notes}"
+        </div>
+      )}
     </div>
   )
 }
@@ -333,42 +400,36 @@ function BrewToolsTab() {
   );
 }
 
-// 2. CURVA DE APRENDIZADO (HISTÓRICO DE INSIGHTS)
 function StatsTab({ reviews }) {
   const total = reviews.length;
   const avgRating = total > 0 ? (reviews.reduce((acc, r) => acc + Number(r.rating), 0) / total).toFixed(1) : 0;
 
   const getInsight = () => {
     if (total < 3) return "Continue avaliando para gerar insights sobre seu paladar.";
-    
     const roastStats = reviews.reduce((acc, r) => {
       acc[r.roast_level] = (acc[r.roast_level] || { sum: 0, count: 0 });
       acc[r.roast_level].sum += Number(r.rating);
       acc[r.roast_level].count += 1;
       return acc;
     }, {});
-
     const topRoast = Object.entries(roastStats).sort((a, b) => (b[1].sum/b[1].count) - (a[1].sum/a[1].count))[0];
-    
-    return `Seu paladar está evoluindo! Você tende a preferir cafés de Torra ${topRoast[0]}, com nota média de ${(topRoast[1].sum/topRoast[1].count).toFixed(1)}. Que tal buscar origens da Etiópia na próxima compra?`;
+    return `Seu paladar está evoluindo! Você tende a preferir cafés de Torra ${topRoast[0]}. Que tal buscar origens da Etiópia na próxima compra?`;
   };
 
   return (
     <div>
       <h2 style={{ fontSize: '1.5rem', color: theme.primary, marginBottom: '20px', fontWeight: '800' }}>O Seu Perfil</h2>
-      
       <div style={{ background: 'linear-gradient(135deg, #6F4E37 0%, #3C2A21 100%)', padding: '20px', borderRadius: '25px', marginBottom: '25px', color: 'white', position: 'relative', overflow: 'hidden' }}>
         <BrainCircuit size={40} style={{ position: 'absolute', right: '-10px', top: '-10px', opacity: 0.2 }} />
-        <h3 style={{ fontSize: '0.8rem', margin: '0 0 10px 0', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '1px' }}>Curva de Aprendizado</h3>
-        <p style={{ margin: 0, fontSize: '0.95rem', fontWeight: '500', lineHeight: '1.4' }}>{getInsight()}</p>
+        <h3 style={{ fontSize: '0.8rem', margin: '0 0 10px 0', opacity: 0.8, textTransform: 'uppercase' }}>Curva de Aprendizado</h3>
+        <p style={{ margin: 0, fontSize: '0.95rem', fontWeight: '500' }}>{getInsight()}</p>
       </div>
-
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-        <div style={{ background: 'white', padding: '20px', borderRadius: '25px', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+        <div style={{ background: 'white', padding: '20px', borderRadius: '25px', textAlign: 'center' }}>
           <span style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>TOTAL</span>
           <h2 style={{ margin: '10px 0 0 0', fontSize: '1.8rem' }}>{total}</h2>
         </div>
-        <div style={{ background: 'white', padding: '20px', borderRadius: '25px', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+        <div style={{ background: 'white', padding: '20px', borderRadius: '25px', textAlign: 'center' }}>
           <span style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>MÉDIA</span>
           <h2 style={{ margin: '10px 0 0 0', fontSize: '1.8rem', color: theme.accent }}>{avgRating} <Star size={18} fill={theme.accent} stroke="none" /></h2>
         </div>
@@ -380,7 +441,9 @@ function StatsTab({ reviews }) {
 function ReviewForm({ mode, initialData, onSave, onCancel }) {
   const [form, setForm] = useState(initialData || { 
     coffee_name: '', brand: '', origin: '', brew_method: 'Coado (V60/Melitta)', 
-    roast_level: 'Média', rating: 5, notes: '', image_url: '', acidity: 3, body: 3, is_favorite: false 
+    roast_level: 'Média', rating: 5, notes: '', image_url: '', 
+    acidity: 3, body: 3, sweetness: 3, bitterness: 2, aroma: 4, 
+    is_favorite: false 
   })
   
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -389,9 +452,7 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
 
   const toggleNote = (note) => {
     const currentNotes = form.notes ? form.notes.split(', ') : [];
-    const newNotes = currentNotes.includes(note) 
-      ? currentNotes.filter(n => n !== note)
-      : [...currentNotes, note];
+    const newNotes = currentNotes.includes(note) ? currentNotes.filter(n => n !== note) : [...currentNotes, note];
     setForm({...form, notes: newNotes.join(', ')});
   }
 
@@ -414,6 +475,8 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
     if (!error) onSave();
   }
 
+  const sliderStyle = { width: '100%', accentColor: theme.primary, marginBottom: '15px' };
+
   return (
     <form onSubmit={handleSubmit} style={{ background: 'white', padding: '20px', borderRadius: '25px' }}>
       <button type="button" onClick={onCancel} style={{ background: 'none', border: 'none', marginBottom: '15px' }}><ArrowLeft /></button>
@@ -425,55 +488,52 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
       
       <input style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #EEE' }} placeholder="Nome do Café" required value={form.coffee_name} onChange={e => setForm({...form, coffee_name: e.target.value})} />
       
-      {/* RODA DE SABORES INTERATIVA NO FORMULÁRIO */}
-      <div style={{ marginBottom: '20px', padding: '15px', background: '#FDFBF7', borderRadius: '15px', border: '1px solid #EEE' }}>
-        <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold', display: 'block', marginBottom: '10px' }}>GUIA DE SABORES (RODA SCAA)</label>
+      {/* GRÁFICO RADAR NO FORMULÁRIO */}
+      <div style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#FDFBF7', borderRadius: '20px', border: '1px solid #EEE' }}>
+        <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: theme.secondary, display: 'block', marginBottom: '20px', textAlign: 'center' }}>PERFIL SENSORIAL</label>
+        <RadarChart data={form} size={200} />
         
-        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '10px' }}>
-          {Object.keys(flavorWheel).map(cat => (
-            <button key={cat} type="button" 
-              onClick={() => setSelectedCategory(cat === selectedCategory ? null : cat)}
-              style={{ padding: '6px 12px', borderRadius: '20px', border: 'none', background: selectedCategory === cat ? theme.primary : '#EEE', color: selectedCategory === cat ? 'white' : theme.text, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
-              {cat}
-            </button>
+        <div style={{ marginTop: '30px' }}>
+          {['acidity', 'body', 'sweetness', 'bitterness', 'aroma'].map(attr => (
+            <div key={attr}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', fontWeight: 'bold' }}>
+                <span style={{ textTransform: 'uppercase' }}>{attr === 'acidity' ? 'Acidez' : attr === 'body' ? 'Corpo' : attr === 'sweetness' ? 'Doçura' : attr === 'bitterness' ? 'Amargor' : 'Aroma'}</span>
+                <span>{form[attr]}/5</span>
+              </div>
+              <input type="range" min="1" max="5" step="0.5" value={form[attr]} onChange={e => setForm({...form, [attr]: Number(e.target.value)})} style={sliderStyle} />
+            </div>
           ))}
         </div>
+      </div>
 
+      <div style={{ marginBottom: '20px', padding: '15px', background: '#FDFBF7', borderRadius: '15px', border: '1px solid #EEE' }}>
+        <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold', display: 'block', marginBottom: '10px' }}>GUIA DE SABORES</label>
+        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '10px' }}>
+          {Object.keys(flavorWheel).map(cat => (
+            <button key={cat} type="button" onClick={() => setSelectedCategory(cat === selectedCategory ? null : cat)} style={{ padding: '6px 12px', borderRadius: '20px', border: 'none', background: selectedCategory === cat ? theme.primary : '#EEE', color: selectedCategory === cat ? 'white' : theme.text, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{cat}</button>
+          ))}
+        </div>
         {selectedCategory && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px', padding: '10px', background: 'white', borderRadius: '10px' }}>
             {flavorWheel[selectedCategory].map(note => (
-              <button key={note} type="button" onClick={() => toggleNote(note)}
-                style={{ padding: '4px 10px', borderRadius: '8px', border: `1px solid ${form.notes.includes(note) ? theme.accent : '#EEE'}`, background: form.notes.includes(note) ? '#FFF7ED' : 'none', color: theme.text, fontSize: '0.75rem' }}>
-                {note}
-              </button>
+              <button key={note} type="button" onClick={() => toggleNote(note)} style={{ padding: '4px 10px', borderRadius: '8px', border: `1px solid ${form.notes.includes(note) ? theme.accent : '#EEE'}`, background: form.notes.includes(note) ? '#FFF7ED' : 'none', color: theme.text, fontSize: '0.75rem' }}>{note}</button>
             ))}
           </div>
         )}
-        <textarea style={{ width: '100%', padding: '10px', minHeight: '60px', marginTop: '10px', fontSize: '0.85rem', border: '1px solid #EEE', borderRadius: '8px' }} placeholder="Notas selecionadas ou adicionais..." value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} />
+        <textarea style={{ width: '100%', padding: '10px', minHeight: '60px', marginTop: '10px', fontSize: '0.85rem', border: '1px solid #EEE', borderRadius: '8px' }} placeholder="Notas..." value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-        <div>
-          <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>ACIDEZ (1-5)</label>
-          <input type="number" min="1" max="5" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE' }} value={form.acidity} onChange={e => setForm({...form, acidity: e.target.value})} />
-        </div>
-        <div>
-          <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>CORPO (1-5)</label>
-          <input type="number" min="1" max="5" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE' }} value={form.body} onChange={e => setForm({...form, body: e.target.value})} />
-        </div>
-      </div>
-
-      <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold', marginTop: '15px', display: 'block' }}>MÉTODO</label>
+      <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>MÉTODO</label>
       <select style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #EEE' }} value={form.brew_method} onChange={e => setForm({...form, brew_method: e.target.value})}>
         <option>Coado (V60/Melitta)</option><option>Prensa Francesa</option><option>Espresso</option><option>Aeropress</option><option>Moka</option>
       </select>
 
-      <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold', display: 'block' }}>TORRA</label>
+      <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>TORRA</label>
       <select style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #EEE' }} value={form.roast_level} onChange={e => setForm({...form, roast_level: e.target.value})}>
         <option>Clara</option><option>Média</option><option>Escura</option>
       </select>
 
-      <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold', display: 'block' }}>NOTA (1-5)</label>
+      <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>NOTA GERAL (1-5)</label>
       <input type="number" min="1" max="5" style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #EEE' }} value={form.rating} onChange={e => setForm({...form, rating: e.target.value})} />
 
       <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
