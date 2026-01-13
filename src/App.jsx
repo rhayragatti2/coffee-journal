@@ -16,7 +16,7 @@ const theme = {
   text: '#3C2A21'
 }
 
-// GUIA DE SABORES EXPANDIDO
+// 1. RODA DE SABORES (SCAA FLAVOR WHEEL SIMPLIFICADA)
 const flavorWheel = {
   "Frutado": ["Limão", "Laranja", "Maçã Verde", "Morango", "Mirtilo", "Uva", "Pêssego", "Manga"],
   "Floral": ["Jasmim", "Flor de Laranjeira", "Rosa", "Hibisco", "Chá Verde"],
@@ -234,3 +234,255 @@ function PantryTab() {
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button onClick={() => updateWeight(item.id, item.weight_current - 18)} style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #EEE', background: 'none', fontSize: '0.75rem', fontWeight: '600' }}>-18g (1 dose)</button>
+                <button onClick={async () => { if(confirm("Excluir?")) { await supabase.from('inventory').delete().eq('id', item.id); fetchPantry(); } }} style={{ padding: '8px', borderRadius: '8px', border: 'none', background: '#f8d7da', color: '#721c24' }}><Trash2 size={14}/></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section style={{ background: '#FFF7ED', padding: '20px', borderRadius: '25px', border: '1px dashed #ECB159' }}>
+        <h2 style={{ fontSize: '1.3rem', color: theme.primary, marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}><ShoppingCart size={22}/> Wishlist</h2>
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+          <input style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #ECB15944', outline: 'none' }} placeholder="O que quer provar?" value={wishInput} onChange={e => setWishInput(e.target.value)} />
+          <button onClick={addWish} style={{ background: theme.accent, color: 'white', border: 'none', padding: '10px', borderRadius: '10px' }}><Plus/></button>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {wishlist.map(wish => (
+            <div key={wish.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '10px 15px', borderRadius: '12px', fontSize: '0.9rem' }}>
+              <span>{wish.item_name}</span>
+              <button onClick={async () => { await supabase.from('wishlist').delete().eq('id', wish.id); fetchWishlist(); }} style={{ background: 'none', border: 'none', color: theme.secondary }}><CheckCircle2 size={18}/></button>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function BrewToolsTab() {
+  const [water, setWater] = useState(250);
+  const [ratio, setRatio] = useState(15);
+  const [coffeeInput, setCoffeeInput] = useState(18); 
+  
+  const [time, setTime] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    if (isRunning) {
+      timerRef.current = setInterval(() => setTime(t => t + 1), 1000);
+    } else {
+      clearInterval(timerRef.current);
+    }
+    return () => clearInterval(timerRef.current);
+  }, [isRunning]);
+
+  const formatTime = (s) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
+  const coffeeNeeded = (water / ratio).toFixed(1);
+  const waterNeeded = (coffeeInput * ratio).toFixed(0);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+      <section>
+        <h2 style={{ fontSize: '1.3rem', color: theme.primary, marginBottom: '15px' }}>Temporizador</h2>
+        <div style={{ background: 'white', padding: '30px', borderRadius: '25px', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+          <div style={{ fontSize: '4rem', fontWeight: '800', fontFamily: 'monospace', color: theme.primary, marginBottom: '20px' }}>{formatTime(time)}</div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '20px' }}>
+            <button onClick={() => {setIsRunning(false); setTime(0)}} style={{ background: '#F5F5F5', border: 'none', width: '50px', height: '50px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><RotateCcw size={20} color={theme.secondary} /></button>
+            <button onClick={() => setIsRunning(!isRunning)} style={{ background: theme.primary, border: 'none', width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              {isRunning ? <Pause size={24} color="white" /> : <Play size={24} color="white" style={{ marginLeft: '4px' }} />}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 style={{ fontSize: '1.3rem', color: theme.primary, marginBottom: '15px' }}>Calculadora</h2>
+        <div style={{ background: 'white', padding: '20px', borderRadius: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: theme.secondary }}>ÁGUA (ml)</label>
+              <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: theme.primary }}>{water}ml</span>
+            </div>
+            <input type="range" min="50" max="1000" step="10" value={water} onChange={(e) => setWater(Number(e.target.value))} style={{ width: '100%', accentColor: theme.primary, margin: '10px 0' }} />
+          </div>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: theme.secondary }}>PROPORÇÃO (1:{ratio})</label>
+              <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: theme.primary }}>1:{ratio}</span>
+            </div>
+            <input type="range" min="10" max="22" step="1" value={ratio} onChange={(e) => setRatio(Number(e.target.value))} style={{ width: '100%', accentColor: theme.secondary, margin: '10px 0' }} />
+          </div>
+          <div style={{ textAlign: 'center', padding: '15px', backgroundColor: '#FDFBF7', borderRadius: '15px', border: '1px solid #EEE' }}>
+            <span style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold', display: 'block' }}>VOCÊ PRECISA DE</span>
+            <h2 style={{ margin: '5px 0 0 0', color: theme.primary }}>{coffeeNeeded}g <span style={{ fontSize: '0.9rem', fontWeight: 'normal' }}>de café</span></h2>
+          </div>
+          <hr style={{ border: 'none', borderTop: '1px dashed #EEE', margin: '5px 0' }} />
+          <div>
+            <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: theme.secondary }}>TENHO ESTA QUANTIA DE CAFÉ (g):</label>
+            <input type="number" value={coffeeInput} onChange={(e) => setCoffeeInput(Number(e.target.value))} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', marginTop: '8px', fontSize: '1rem', outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div style={{ textAlign: 'center', padding: '15px', backgroundColor: '#FFF7ED', borderRadius: '15px', border: '1px solid #ECB15944' }}>
+            <span style={{ fontSize: '0.7rem', color: '#A67B5B', fontWeight: 'bold', display: 'block' }}>USE ESTA QUANTIA DE ÁGUA</span>
+            <h2 style={{ margin: '5px 0 0 0', color: '#6F4E37' }}>{waterNeeded}ml <span style={{ fontSize: '0.9rem', fontWeight: 'normal' }}>de água</span></h2>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+// 2. CURVA DE APRENDIZADO (HISTÓRICO DE INSIGHTS)
+function StatsTab({ reviews }) {
+  const total = reviews.length;
+  const avgRating = total > 0 ? (reviews.reduce((acc, r) => acc + Number(r.rating), 0) / total).toFixed(1) : 0;
+
+  const getInsight = () => {
+    if (total < 3) return "Continue avaliando para gerar insights sobre seu paladar.";
+    
+    const roastStats = reviews.reduce((acc, r) => {
+      acc[r.roast_level] = (acc[r.roast_level] || { sum: 0, count: 0 });
+      acc[r.roast_level].sum += Number(r.rating);
+      acc[r.roast_level].count += 1;
+      return acc;
+    }, {});
+
+    const topRoast = Object.entries(roastStats).sort((a, b) => (b[1].sum/b[1].count) - (a[1].sum/a[1].count))[0];
+    
+    return `Seu paladar está evoluindo! Você tende a preferir cafés de Torra ${topRoast[0]}, com nota média de ${(topRoast[1].sum/topRoast[1].count).toFixed(1)}. Que tal buscar origens da Etiópia na próxima compra?`;
+  };
+
+  return (
+    <div>
+      <h2 style={{ fontSize: '1.5rem', color: theme.primary, marginBottom: '20px', fontWeight: '800' }}>O Seu Perfil</h2>
+      
+      <div style={{ background: 'linear-gradient(135deg, #6F4E37 0%, #3C2A21 100%)', padding: '20px', borderRadius: '25px', marginBottom: '25px', color: 'white', position: 'relative', overflow: 'hidden' }}>
+        <BrainCircuit size={40} style={{ position: 'absolute', right: '-10px', top: '-10px', opacity: 0.2 }} />
+        <h3 style={{ fontSize: '0.8rem', margin: '0 0 10px 0', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '1px' }}>Curva de Aprendizado</h3>
+        <p style={{ margin: 0, fontSize: '0.95rem', fontWeight: '500', lineHeight: '1.4' }}>{getInsight()}</p>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+        <div style={{ background: 'white', padding: '20px', borderRadius: '25px', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+          <span style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>TOTAL</span>
+          <h2 style={{ margin: '10px 0 0 0', fontSize: '1.8rem' }}>{total}</h2>
+        </div>
+        <div style={{ background: 'white', padding: '20px', borderRadius: '25px', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+          <span style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>MÉDIA</span>
+          <h2 style={{ margin: '10px 0 0 0', fontSize: '1.8rem', color: theme.accent }}>{avgRating} <Star size={18} fill={theme.accent} stroke="none" /></h2>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ReviewForm({ mode, initialData, onSave, onCancel }) {
+  const [form, setForm] = useState(initialData || { 
+    coffee_name: '', brand: '', origin: '', brew_method: 'Coado (V60/Melitta)', 
+    roast_level: 'Média', rating: 5, notes: '', image_url: '', acidity: 3, body: 3, is_favorite: false 
+  })
+  
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef(null)
+
+  const toggleNote = (note) => {
+    const currentNotes = form.notes ? form.notes.split(', ') : [];
+    const newNotes = currentNotes.includes(note) 
+      ? currentNotes.filter(n => n !== note)
+      : [...currentNotes, note];
+    setForm({...form, notes: newNotes.join(', ')});
+  }
+
+  async function handleFileUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    const fileName = `${Date.now()}-${file.name}`;
+    const { error } = await supabase.storage.from('coffee-images').upload(fileName, file);
+    if (!error) {
+      const { data } = supabase.storage.from('coffee-images').getPublicUrl(fileName);
+      setForm({ ...form, image_url: data.publicUrl });
+    }
+    setUploading(false);
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    const { error } = mode === 'edit' ? await supabase.from('reviews').update(form).eq('id', initialData.id) : await supabase.from('reviews').insert([form]);
+    if (!error) onSave();
+  }
+
+  return (
+    <form onSubmit={handleSubmit} style={{ background: 'white', padding: '20px', borderRadius: '25px' }}>
+      <button type="button" onClick={onCancel} style={{ background: 'none', border: 'none', marginBottom: '15px' }}><ArrowLeft /></button>
+      
+      <div onClick={() => fileInputRef.current.click()} style={{ width: '100%', height: '180px', background: '#F5F5F5', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', overflow: 'hidden', cursor: 'pointer' }}>
+        {form.image_url ? <img src={form.image_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : uploading ? <Loader2 className="animate-spin" /> : <Camera color="#CCC" />}
+      </div>
+      <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload} />
+      
+      <input style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #EEE' }} placeholder="Nome do Café" required value={form.coffee_name} onChange={e => setForm({...form, coffee_name: e.target.value})} />
+      
+      {/* RODA DE SABORES INTERATIVA NO FORMULÁRIO */}
+      <div style={{ marginBottom: '20px', padding: '15px', background: '#FDFBF7', borderRadius: '15px', border: '1px solid #EEE' }}>
+        <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold', display: 'block', marginBottom: '10px' }}>GUIA DE SABORES (RODA SCAA)</label>
+        
+        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '10px' }}>
+          {Object.keys(flavorWheel).map(cat => (
+            <button key={cat} type="button" 
+              onClick={() => setSelectedCategory(cat === selectedCategory ? null : cat)}
+              style={{ padding: '6px 12px', borderRadius: '20px', border: 'none', background: selectedCategory === cat ? theme.primary : '#EEE', color: selectedCategory === cat ? 'white' : theme.text, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {selectedCategory && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px', padding: '10px', background: 'white', borderRadius: '10px' }}>
+            {flavorWheel[selectedCategory].map(note => (
+              <button key={note} type="button" onClick={() => toggleNote(note)}
+                style={{ padding: '4px 10px', borderRadius: '8px', border: `1px solid ${form.notes.includes(note) ? theme.accent : '#EEE'}`, background: form.notes.includes(note) ? '#FFF7ED' : 'none', color: theme.text, fontSize: '0.75rem' }}>
+                {note}
+              </button>
+            ))}
+          </div>
+        )}
+        <textarea style={{ width: '100%', padding: '10px', minHeight: '60px', marginTop: '10px', fontSize: '0.85rem', border: '1px solid #EEE', borderRadius: '8px' }} placeholder="Notas selecionadas ou adicionais..." value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+        <div>
+          <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>ACIDEZ (1-5)</label>
+          <input type="number" min="1" max="5" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE' }} value={form.acidity} onChange={e => setForm({...form, acidity: e.target.value})} />
+        </div>
+        <div>
+          <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>CORPO (1-5)</label>
+          <input type="number" min="1" max="5" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE' }} value={form.body} onChange={e => setForm({...form, body: e.target.value})} />
+        </div>
+      </div>
+
+      <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold', marginTop: '15px', display: 'block' }}>MÉTODO</label>
+      <select style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #EEE' }} value={form.brew_method} onChange={e => setForm({...form, brew_method: e.target.value})}>
+        <option>Coado (V60/Melitta)</option><option>Prensa Francesa</option><option>Espresso</option><option>Aeropress</option><option>Moka</option>
+      </select>
+
+      <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold', display: 'block' }}>TORRA</label>
+      <select style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #EEE' }} value={form.roast_level} onChange={e => setForm({...form, roast_level: e.target.value})}>
+        <option>Clara</option><option>Média</option><option>Escura</option>
+      </select>
+
+      <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold', display: 'block' }}>NOTA (1-5)</label>
+      <input type="number" min="1" max="5" style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #EEE' }} value={form.rating} onChange={e => setForm({...form, rating: e.target.value})} />
+
+      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+        <input type="checkbox" checked={form.is_favorite} onChange={e => setForm({...form, is_favorite: e.target.checked})} /> Favorito ❤️
+      </label>
+      
+      <button type="submit" disabled={uploading} style={{ width: '100%', background: theme.primary, color: 'white', border: 'none', padding: '15px', borderRadius: '12px', fontWeight: 'bold' }}>
+        {uploading ? 'Salvando...' : 'Salvar Review'}
+      </button>
+    </form>
+  )
+}
