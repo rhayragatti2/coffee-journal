@@ -71,7 +71,7 @@ export default function App() {
         )}
       </div>
 
-      {/* NAVEGAÇÃO INFERIOR CORRIGIDA E ALINHADA */}
+      {/* NAVEGAÇÃO INFERIOR ALINHADA */}
       {view === 'list' && (
         <nav style={{
           position: 'fixed', bottom: 0, left: 0, right: 0, height: '80px',
@@ -155,7 +155,6 @@ function ReviewCard({ review, onEdit, onDelete, onToggleFavorite }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Flame size={14} color={theme.secondary}/> Torra: {review.roast_level}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Coffee size={14} color={theme.secondary}/> {review.brew_method}</div>
         </div>
-        {/* CORREÇÃO DE WRAP PARA TEXTOS LONGOS */}
         {review.notes && (
           <div style={{ 
             marginTop: '15px', padding: '12px', background: '#F9F9F9', borderRadius: '12px', 
@@ -226,7 +225,6 @@ function PantryTab() {
                 <div style={{ width: `${(item.weight_current / item.weight_total) * 100}%`, height: '100%', background: theme.secondary, borderRadius: '10px' }}></div>
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
-                {/* DOSE PADRÃO 18G */}
                 <button onClick={() => updateWeight(item.id, item.weight_current - 18)} style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #EEE', background: 'none', fontSize: '0.75rem', fontWeight: '600' }}>-18g (1 dose)</button>
                 <button onClick={async () => { if(confirm("Excluir?")) { await supabase.from('inventory').delete().eq('id', item.id); fetchPantry(); } }} style={{ padding: '8px', borderRadius: '8px', border: 'none', background: '#f8d7da', color: '#721c24' }}><Trash2 size={14}/></button>
               </div>
@@ -235,6 +233,7 @@ function PantryTab() {
         </div>
       </section>
 
+      {/* WISHLIST RESTAURADA */}
       <section style={{ background: '#FFF7ED', padding: '20px', borderRadius: '25px', border: '1px dashed #ECB159' }}>
         <h2 style={{ fontSize: '1.3rem', color: theme.primary, marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}><ShoppingCart size={22}/> Wishlist</h2>
         <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
@@ -255,9 +254,10 @@ function PantryTab() {
 }
 
 function BrewToolsTab() {
-  {/* DOSE PADRÃO 18G */}
-  const [coffee, setCoffee] = useState(18);
+  const [water, setWater] = useState(250);
   const [ratio, setRatio] = useState(15);
+  const [coffeeInput, setCoffeeInput] = useState(18); // Dose padrão
+  
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef(null);
@@ -272,6 +272,8 @@ function BrewToolsTab() {
   }, [isRunning]);
 
   const formatTime = (s) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
+  const coffeeNeeded = (water / ratio).toFixed(1);
+  const waterNeeded = (coffeeInput * ratio).toFixed(0);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
@@ -287,15 +289,36 @@ function BrewToolsTab() {
           </div>
         </div>
       </section>
+
       <section>
         <h2 style={{ fontSize: '1.3rem', color: theme.primary, marginBottom: '15px' }}>Calculadora</h2>
-        <div style={{ background: 'white', padding: '20px', borderRadius: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
-          <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: theme.secondary }}>CAFÉ (g)</label>
-          <input type="number" value={coffee} onChange={(e) => setCoffee(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', margin: '8px 0 20px 0', fontSize: '1.1rem', outline: 'none' }} />
-          <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: theme.secondary }}>PROPORÇÃO (1:{ratio})</label>
-          <input type="range" min="10" max="20" value={ratio} onChange={(e) => setRatio(e.target.value)} style={{ width: '100%', accentColor: theme.primary, margin: '10px 0 20px 0' }} />
-          <div style={{ textAlign: 'center', padding: '15px', backgroundColor: theme.bg, borderRadius: '15px' }}>
-            <h2 style={{ margin: 0, color: theme.primary }}>{coffee * ratio}ml <span style={{ fontSize: '0.9rem', fontWeight: 'normal' }}>água</span></h2>
+        <div style={{ background: 'white', padding: '20px', borderRadius: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: theme.secondary }}>ÁGUA (ml)</label>
+              <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: theme.primary }}>{water}ml</span>
+            </div>
+            <input type="range" min="50" max="1000" step="10" value={water} onChange={(e) => setWater(Number(e.target.value))} style={{ width: '100%', accentColor: theme.primary, margin: '10px 0' }} />
+          </div>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: theme.secondary }}>PROPORÇÃO (1:{ratio})</label>
+              <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: theme.primary }}>1:{ratio}</span>
+            </div>
+            <input type="range" min="10" max="22" step="1" value={ratio} onChange={(e) => setRatio(Number(e.target.value))} style={{ width: '100%', accentColor: theme.secondary, margin: '10px 0' }} />
+          </div>
+          <div style={{ textAlign: 'center', padding: '15px', backgroundColor: '#FDFBF7', borderRadius: '15px', border: '1px solid #EEE' }}>
+            <span style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold', display: 'block' }}>VOCÊ PRECISA DE</span>
+            <h2 style={{ margin: '5px 0 0 0', color: theme.primary }}>{coffeeNeeded}g <span style={{ fontSize: '0.9rem', fontWeight: 'normal' }}>de café</span></h2>
+          </div>
+          <hr style={{ border: 'none', borderTop: '1px dashed #EEE', margin: '5px 0' }} />
+          <div>
+            <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: theme.secondary }}>TENHO ESTA QUANTIA DE CAFÉ (g):</label>
+            <input type="number" value={coffeeInput} onChange={(e) => setCoffeeInput(Number(e.target.value))} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', marginTop: '8px', fontSize: '1rem', outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div style={{ textAlign: 'center', padding: '15px', backgroundColor: '#FFF7ED', borderRadius: '15px', border: '1px solid #ECB15944' }}>
+            <span style={{ fontSize: '0.7rem', color: '#A67B5B', fontWeight: 'bold', display: 'block' }}>USE ESTA QUANTIA DE ÁGUA</span>
+            <h2 style={{ margin: '5px 0 0 0', color: '#6F4E37' }}>{waterNeeded}ml <span style={{ fontSize: '0.9rem', fontWeight: 'normal' }}>de água</span></h2>
           </div>
         </div>
       </section>
@@ -305,15 +328,11 @@ function BrewToolsTab() {
 
 function StatsTab({ reviews }) {
   const total = reviews.length;
-  const favs = reviews.filter(r => r.is_favorite).length;
   const avgRating = total > 0 ? (reviews.reduce((acc, r) => acc + Number(r.rating), 0) / total).toFixed(1) : 0;
-  const methods = reviews.reduce((acc, r) => { acc[r.brew_method] = (acc[r.brew_method] || 0) + 1; return acc; }, {});
-  const topMethod = Object.entries(methods).sort((a, b) => b[1] - a[1])[0]?.[0] || "---";
-
   return (
     <div>
       <h2 style={{ fontSize: '1.5rem', color: theme.primary, marginBottom: '20px', fontWeight: '800' }}>O Seu Perfil</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '25px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
         <div style={{ background: 'white', padding: '20px', borderRadius: '25px', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
           <span style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>TOTAL</span>
           <h2 style={{ margin: '10px 0 0 0', fontSize: '1.8rem' }}>{total}</h2>
@@ -321,17 +340,6 @@ function StatsTab({ reviews }) {
         <div style={{ background: 'white', padding: '20px', borderRadius: '25px', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
           <span style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>MÉDIA</span>
           <h2 style={{ margin: '10px 0 0 0', fontSize: '1.8rem', color: theme.accent }}>{avgRating} <Star size={18} fill={theme.accent} stroke="none" /></h2>
-        </div>
-      </div>
-      <div style={{ background: 'white', padding: '25px', borderRadius: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
-        <h3 style={{ fontSize: '1rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}><Coffee size={18} color={theme.primary} /> Preferências</h3>
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}><span>Método Favorito:</span><span style={{ fontWeight: 'bold' }}>{topMethod}</span></div>
-          <div style={{ width: '100%', height: '8px', background: '#F0F0F0', borderRadius: '10px' }}><div style={{ width: total > 0 ? '75%' : '0%', height: '100%', background: theme.primary, borderRadius: '10px' }}></div></div>
-        </div>
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}><span>Favoritos:</span><span style={{ fontWeight: 'bold' }}>{total > 0 ? Math.round((favs/total)*100) : 0}%</span></div>
-          <div style={{ width: '100%', height: '8px', background: '#F0F0F0', borderRadius: '10px' }}><div style={{ width: total > 0 ? `${(favs/total)*100}%` : '0%', height: '100%', background: '#d9534f', borderRadius: '10px' }}></div></div>
         </div>
       </div>
     </div>
@@ -345,7 +353,6 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
   })
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef(null)
-
   const inputStyle = { width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #EEE', outline: 'none', boxSizing: 'border-box' }
 
   async function handleFileUpload(e) {
@@ -370,16 +377,13 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
   return (
     <form onSubmit={handleSubmit} style={{ background: 'white', padding: '20px', borderRadius: '25px' }}>
       <button type="button" onClick={onCancel} style={{ background: 'none', border: 'none', marginBottom: '15px' }}><ArrowLeft /></button>
-      
       <div onClick={() => fileInputRef.current.click()} style={{ width: '100%', height: '180px', background: '#F5F5F5', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', overflow: 'hidden', cursor: 'pointer' }}>
         {form.image_url ? <img src={form.image_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : uploading ? <Loader2 className="animate-spin" /> : <Camera color="#CCC" />}
       </div>
       <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload} />
-      
       <input style={inputStyle} placeholder="Nome do Café" required value={form.coffee_name} onChange={e => setForm({...form, coffee_name: e.target.value})} />
       <input style={inputStyle} placeholder="Marca" value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} />
       <input style={inputStyle} placeholder="Origem" value={form.origin} onChange={e => setForm({...form, origin: e.target.value})} />
-      
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
         <div>
           <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>ACIDEZ (1-5)</label>
@@ -390,26 +394,20 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
           <input type="number" min="1" max="5" style={inputStyle} value={form.body} onChange={e => setForm({...form, body: e.target.value})} />
         </div>
       </div>
-
       <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>MÉTODO</label>
       <select style={inputStyle} value={form.brew_method} onChange={e => setForm({...form, brew_method: e.target.value})}>
         <option>Coado (V60/Melitta)</option><option>Prensa Francesa</option><option>Espresso</option><option>Aeropress</option><option>Moka</option>
       </select>
-
       <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>TORRA</label>
       <select style={inputStyle} value={form.roast_level} onChange={e => setForm({...form, roast_level: e.target.value})}>
         <option>Clara</option><option>Média</option><option>Escura</option>
       </select>
-
       <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>NOTA (1-5)</label>
       <input type="number" min="1" max="5" style={inputStyle} value={form.rating} onChange={e => setForm({...form, rating: e.target.value})} />
-
       <textarea style={{ ...inputStyle, minHeight: '80px' }} placeholder="Notas de degustação..." value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} />
-      
       <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
         <input type="checkbox" checked={form.is_favorite} onChange={e => setForm({...form, is_favorite: e.target.checked})} /> Favorito ❤️
       </label>
-      
       <button type="submit" disabled={uploading} style={{ width: '100%', background: theme.primary, color: 'white', border: 'none', padding: '15px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
         {uploading ? 'Salvando...' : 'Salvar Review'}
       </button>
