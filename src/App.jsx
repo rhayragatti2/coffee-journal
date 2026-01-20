@@ -449,8 +449,8 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
     e.preventDefault();
     setUploading(true);
     
-    // Garantir que valores numéricos sejam enviados como números e não strings
-    const finalForm = {
+    // Criamos uma cópia do formulário garantindo que números sejam números
+    const dataToSave = {
       ...form,
       rating: Number(form.rating),
       acidity: Number(form.acidity),
@@ -462,10 +462,12 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
 
     try {
       const { error } = mode === 'edit' 
-        ? await supabase.from('reviews').update(finalForm).eq('id', initialData.id) 
-        : await supabase.from('reviews').insert([finalForm]);
+        ? await supabase.from('reviews').update(dataToSave).eq('id', initialData.id) 
+        : await supabase.from('reviews').insert([dataToSave]);
       
       if (error) {
+        // Se ainda der erro de cache, este alert nos dirá exatamente o que a API está vendo
+        console.error("Erro detalhado:", error);
         alert("Erro ao salvar: " + error.message);
       } else {
         onSave();
