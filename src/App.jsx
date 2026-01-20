@@ -79,7 +79,7 @@ export default function App() {
 
   useEffect(() => { fetchReviews() }, [])
 
-  async function fetchReviews() {
+   function fetchReviews() {
     const { data } = await supabase.from('reviews').select('*')
       .order('is_favorite', { ascending: false })
       .order('created_at', { ascending: false })
@@ -99,13 +99,13 @@ export default function App() {
             {activeTab === 'home' && (
               <HomeTab reviews={filteredReviews} searchTerm={searchTerm} setSearchTerm={setSearchTerm} 
                 onEdit={(r) => { setCurrentReview(r); setView('edit'); }} 
-                onDelete={async (id) => {
+                onDelete={ (id) => {
                   if(window.confirm("Excluir review?")) {
                     await supabase.from('reviews').delete().eq('id', id);
                     fetchReviews();
                   }
                 }}
-                onToggleFavorite={async (id, status) => {
+                onToggleFavorite={ (id, status) => {
                   await supabase.from('reviews').update({ is_favorite: !status }).eq('id', id);
                   fetchReviews();
                 }}
@@ -241,31 +241,31 @@ function PantryTab() {
 
   useEffect(() => { fetchPantry(); fetchWishlist(); }, []);
 
-  async function fetchPantry() {
+   function fetchPantry() {
     const { data } = await supabase.from('inventory').select('*').order('created_at', { ascending: false });
     if (data) setItems(data);
   }
 
-  async function fetchWishlist() {
+   function fetchWishlist() {
     const { data } = await supabase.from('wishlist').select('*').order('created_at', { ascending: false });
     if (data) setWishlist(data);
   }
 
-  async function addInventory() {
+   function addInventory() {
     if (!newItemName) return;
     await supabase.from('inventory').insert([{ name: newItemName, brand: '', weight_total: 250, weight_current: 250 }]);
     setNewItemName('');
     fetchPantry();
   }
 
-  async function addWish() {
+   function addWish() {
     if (!wishInput) return;
     await supabase.from('wishlist').insert([{ item_name: wishInput }]);
     setWishInput('');
     fetchWishlist();
   }
 
-  async function updateWeight(id, newWeight) {
+   function updateWeight(id, newWeight) {
     await supabase.from('inventory').update({ weight_current: Math.max(0, newWeight) }).eq('id', id);
     fetchPantry();
   }
@@ -290,7 +290,7 @@ function PantryTab() {
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button onClick={() => updateWeight(item.id, item.weight_current - 18)} style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #EEE', background: 'none', fontSize: '0.75rem', fontWeight: '600' }}>-18g (1 dose)</button>
-                <button onClick={async () => { if(confirm("Excluir?")) { await supabase.from('inventory').delete().eq('id', item.id); fetchPantry(); } }} style={{ padding: '8px', borderRadius: '8px', border: 'none', background: '#f8d7da', color: '#721c24' }}><Trash2 size={14}/></button>
+                <button onClick={ () => { if(confirm("Excluir?")) { await supabase.from('inventory').delete().eq('id', item.id); fetchPantry(); } }} style={{ padding: '8px', borderRadius: '8px', border: 'none', background: '#f8d7da', color: '#721c24' }}><Trash2 size={14}/></button>
               </div>
             </div>
           ))}
@@ -307,7 +307,7 @@ function PantryTab() {
           {wishlist.map(wish => (
             <div key={wish.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '10px 15px', borderRadius: '12px', fontSize: '0.9rem' }}>
               <span>{wish.item_name}</span>
-              <button onClick={async () => { await supabase.from('wishlist').delete().eq('id', wish.id); fetchWishlist(); }} style={{ background: 'none', border: 'none', color: theme.secondary }}><CheckCircle2 size={18}/></button>
+              <button onClick={ () => { await supabase.from('wishlist').delete().eq('id', wish.id); fetchWishlist(); }} style={{ background: 'none', border: 'none', color: theme.secondary }}><CheckCircle2 size={18}/></button>
             </div>
           ))}
         </div>
@@ -448,10 +448,22 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
   async function handleSubmit(e) {
     e.preventDefault();
     setUploading(true);
+    
+    // Garantir que valores numéricos sejam enviados como números e não strings
+    const finalForm = {
+      ...form,
+      rating: Number(form.rating),
+      acidity: Number(form.acidity),
+      body: Number(form.body),
+      sweetness: Number(form.sweetness),
+      bitterness: Number(form.bitterness),
+      aroma: Number(form.aroma)
+    };
+
     try {
       const { error } = mode === 'edit' 
-        ? await supabase.from('reviews').update(form).eq('id', initialData.id) 
-        : await supabase.from('reviews').insert([form]);
+        ? await supabase.from('reviews').update(finalForm).eq('id', initialData.id) 
+        : await supabase.from('reviews').insert([finalForm]);
       
       if (error) {
         alert("Erro ao salvar: " + error.message);
