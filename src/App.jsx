@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabaseClient'
 import { 
-  Plus, Star, ArrowLeft, Bean, Droplets, Camera, 
-  Loader2, Flame, Trash2, Edit3, Search, 
-  Heart, LayoutGrid, BarChart3, Clock, Coffee, Package, ShoppingCart, CheckCircle2, Pause, Play, RotateCcw,
-  BrainCircuit
+  Plus, Star, ArrowLeft, Camera, Loader2, Flame, Trash2, Edit3, Search, 
+  Heart, LayoutGrid, BarChart3, Clock, Coffee, Package, ShoppingCart, 
+  CheckCircle2, Pause, Play, RotateCcw, BrainCircuit
 } from 'lucide-react'
 
 const theme = {
@@ -26,6 +25,7 @@ const flavorWheel = {
   "Fermentado": ["Vinho Tinto", "Whisky", "Frutas Passas", "Cerveja Artesanal"]
 };
 
+// COMPONENTE DO GRÁFICO RADAR
 function RadarChart({ data, size = 150, showLabels = true }) {
   const points = [
     { label: "Acidez", value: data.acidity || 3 },
@@ -80,15 +80,10 @@ export default function App() {
   useEffect(() => { fetchReviews() }, [])
 
   async function fetchReviews() {
-    try {
-      const { data, error } = await supabase.from('reviews').select('*')
-        .order('is_favorite', { ascending: false })
-        .order('created_at', { ascending: false })
-      if (error) throw error;
-      if (data) setReviews(data)
-    } catch (e) {
-      console.error("Erro ao buscar reviews:", e.message)
-    }
+    const { data } = await supabase.from('reviews').select('*')
+      .order('is_favorite', { ascending: false })
+      .order('created_at', { ascending: false })
+    if (data) setReviews(data)
   }
 
   const filteredReviews = reviews.filter(r => 
@@ -177,13 +172,9 @@ function HomeTab({ reviews, searchTerm, setSearchTerm, onEdit, onDelete, onToggl
         />
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        {reviews.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#AAA' }}>Nenhum café registrado ainda.</div>
-        ) : (
-          reviews.map(r => (
-            <ReviewCard key={r.id} review={r} onEdit={() => onEdit(r)} onDelete={() => onDelete(r.id)} onToggleFavorite={() => onToggleFavorite(r.id, r.is_favorite)} />
-          ))
-        )}
+        {reviews.map(r => (
+          <ReviewCard key={r.id} review={r} onEdit={() => onEdit(r)} onDelete={() => onDelete(r.id)} onToggleFavorite={() => onToggleFavorite(r.id, r.is_favorite)} />
+        ))}
       </div>
     </>
   )
@@ -192,7 +183,7 @@ function HomeTab({ reviews, searchTerm, setSearchTerm, onEdit, onDelete, onToggl
 function ReviewCard({ review, onEdit, onDelete, onToggleFavorite }) {
   const hasImage = !!review.image_url;
   return (
-    <div style={{ background: theme.card, borderRadius: '25px', overflow: 'hidden', boxShadow: '0 8px 20px rgba(0,0,0,0.04)', position: 'relative', marginBottom: '10px' }}>
+    <div style={{ background: theme.card, borderRadius: '25px', overflow: 'hidden', boxShadow: '0 8px 20px rgba(0,0,0,0.04)', position: 'relative' }}>
       {hasImage && <img src={review.image_url} alt="Café" style={{ width: '100%', height: '220px', objectFit: 'cover' }} />}
       
       <div style={{ position: hasImage ? 'absolute' : 'relative', top: hasImage ? '15px' : '0', padding: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', boxSizing: 'border-box', zIndex: 10 }}>
@@ -224,8 +215,16 @@ function ReviewCard({ review, onEdit, onDelete, onToggleFavorite }) {
 
       {review.notes && (
         <div style={{ 
-          margin: '0 20px 20px 20px', padding: '12px', background: '#F9F9F9', borderRadius: '12px', borderLeft: `3px solid ${theme.accent}`, 
-          fontSize: '0.85rem', fontStyle: 'italic', wordBreak: 'break-word', overflowWrap: 'break-word', whiteSpace: 'pre-wrap'
+          margin: '0 20px 20px 20px', 
+          padding: '12px', 
+          background: '#F9F9F9', 
+          borderRadius: '12px', 
+          borderLeft: `3px solid ${theme.accent}`, 
+          fontSize: '0.85rem', 
+          fontStyle: 'italic',
+          wordBreak: 'break-word',
+          overflowWrap: 'break-word',
+          whiteSpace: 'pre-wrap'
         }}>
           "{review.notes}"
         </div>
@@ -297,6 +296,7 @@ function PantryTab() {
           ))}
         </div>
       </section>
+
       <section style={{ background: '#FFF7ED', padding: '20px', borderRadius: '25px', border: '1px dashed #ECB159' }}>
         <h2 style={{ fontSize: '1.3rem', color: theme.primary, marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}><ShoppingCart size={22}/> Wishlist</h2>
         <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
@@ -325,8 +325,11 @@ function BrewToolsTab() {
   const timerRef = useRef(null);
 
   useEffect(() => {
-    if (isRunning) { timerRef.current = setInterval(() => setTime(t => t + 1), 1000); } 
-    else { clearInterval(timerRef.current); }
+    if (isRunning) {
+      timerRef.current = setInterval(() => setTime(t => t + 1), 1000);
+    } else {
+      clearInterval(timerRef.current);
+    }
     return () => clearInterval(timerRef.current);
   }, [isRunning]);
 
@@ -348,6 +351,7 @@ function BrewToolsTab() {
           </div>
         </div>
       </section>
+
       <section>
         <h2 style={{ fontSize: '1.3rem', color: theme.primary, marginBottom: '15px' }}>Calculadora</h2>
         <div style={{ background: 'white', padding: '20px', borderRadius: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -357,6 +361,13 @@ function BrewToolsTab() {
               <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: theme.primary }}>{water}ml</span>
             </div>
             <input type="range" min="50" max="1000" step="10" value={water} onChange={(e) => setWater(Number(e.target.value))} style={{ width: '100%', accentColor: theme.primary, margin: '10px 0' }} />
+          </div>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: theme.secondary }}>PROPORÇÃO (1:{ratio})</label>
+              <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: theme.primary }}>1:{ratio}</span>
+            </div>
+            <input type="range" min="10" max="22" step="1" value={ratio} onChange={(e) => setRatio(Number(e.target.value))} style={{ width: '100%', accentColor: theme.secondary, margin: '10px 0' }} />
           </div>
           <div style={{ textAlign: 'center', padding: '15px', backgroundColor: '#FDFBF7', borderRadius: '15px', border: '1px solid #EEE' }}>
             <span style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold', display: 'block' }}>VOCÊ PRECISA DE</span>
@@ -380,12 +391,14 @@ function BrewToolsTab() {
 function StatsTab({ reviews }) {
   const total = reviews.length;
   const avgRating = total > 0 ? (reviews.reduce((acc, r) => acc + Number(r.rating), 0) / total).toFixed(1) : 0;
+
   return (
     <div>
       <h2 style={{ fontSize: '1.5rem', color: theme.primary, marginBottom: '20px', fontWeight: '800' }}>O Seu Perfil</h2>
-      <div style={{ background: 'linear-gradient(135deg, #6F4E37 0%, #3C2A21 100%)', padding: '20px', borderRadius: '25px', marginBottom: '25px', color: 'white' }}>
+      <div style={{ background: 'linear-gradient(135deg, #6F4E37 0%, #3C2A21 100%)', padding: '20px', borderRadius: '25px', marginBottom: '25px', color: 'white', position: 'relative', overflow: 'hidden' }}>
+        <BrainCircuit size={40} style={{ position: 'absolute', right: '-10px', top: '-10px', opacity: 0.2 }} />
         <h3 style={{ fontSize: '0.8rem', margin: '0 0 10px 0', opacity: 0.8, textTransform: 'uppercase' }}>Curva de Aprendizado</h3>
-        <p style={{ margin: 0, fontSize: '0.95rem', fontWeight: '500' }}>Continue avaliando para gerar insights sobre seu paladar.</p>
+        <p style={{ margin: 0, fontSize: '0.95rem', fontWeight: '500' }}>{total < 3 ? "Continue avaliando para gerar insights sobre seu paladar." : "Seu paladar está evoluindo! Continue registrando novas origens."}</p>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
         <div style={{ background: 'white', padding: '20px', borderRadius: '25px', textAlign: 'center' }}>
@@ -408,6 +421,7 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
     acidity: 3, body: 3, sweetness: 3, bitterness: 2, aroma: 4, 
     is_favorite: false 
   })
+  
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef(null)
@@ -422,53 +436,46 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
-    try {
-      const fileName = `${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage.from('coffee-images').upload(fileName, file);
-      if (error) throw error;
+    const fileName = `${Date.now()}-${file.name}`;
+    const { error } = await supabase.storage.from('coffee-images').upload(fileName, file);
+    if (!error) {
       const { data } = supabase.storage.from('coffee-images').getPublicUrl(fileName);
       setForm({ ...form, image_url: data.publicUrl });
-    } catch (e) { alert("Erro no upload: " + e.message); }
+    }
     setUploading(false);
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setUploading(true);
-
-    // LIMPEZA DE DADOS (Dica para evitar erro no banco antigo)
-    // Se o banco não tiver as colunas novas, enviamos apenas o básico primeiro.
-    const payload = { ...form };
-
     try {
-      let result;
-      if (mode === 'edit') {
-        result = await supabase.from('reviews').update(payload).eq('id', initialData.id);
-      } else {
-        result = await supabase.from('reviews').insert([payload]);
-      }
-
-      if (result.error) {
-        console.error("Erro Supabase:", result.error);
-        alert(`Erro ao salvar: ${result.error.message}. Verifique se as colunas acidity, body, sweetness, bitterness e aroma existem na sua tabela 'reviews' no Supabase.`);
+      const { error } = mode === 'edit' 
+        ? await supabase.from('reviews').update(form).eq('id', initialData.id) 
+        : await supabase.from('reviews').insert([form]);
+      
+      if (error) {
+        alert("Erro ao salvar: " + error.message);
       } else {
         onSave();
       }
     } catch (err) {
-      console.error("Erro inesperado:", err);
-      alert("Ocorreu um erro inesperado ao salvar.");
+      alert("Erro inesperado: " + err.message);
     } finally {
       setUploading(false);
     }
   }
 
+  const sliderStyle = { width: '100%', accentColor: theme.primary, marginBottom: '15px' };
+
   return (
     <form onSubmit={handleSubmit} style={{ background: 'white', padding: '20px', borderRadius: '25px', marginBottom: '80px' }}>
       <button type="button" onClick={onCancel} style={{ background: 'none', border: 'none', marginBottom: '15px' }}><ArrowLeft /></button>
+      
       <div onClick={() => fileInputRef.current.click()} style={{ width: '100%', height: '180px', background: '#F5F5F5', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', overflow: 'hidden', cursor: 'pointer' }}>
         {form.image_url ? <img src={form.image_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : uploading ? <Loader2 className="animate-spin" /> : <Camera color="#CCC" />}
       </div>
       <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload} />
+      
       <input style={{ width: '100%', padding: '12px', marginBottom: '10px', borderRadius: '10px', border: '1px solid #EEE' }} placeholder="Nome do Café" required value={form.coffee_name} onChange={e => setForm({...form, coffee_name: e.target.value})} />
       <input style={{ width: '100%', padding: '12px', marginBottom: '10px', borderRadius: '10px', border: '1px solid #EEE' }} placeholder="Marca" value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} />
       <input style={{ width: '100%', padding: '12px', marginBottom: '20px', borderRadius: '10px', border: '1px solid #EEE' }} placeholder="Origem" value={form.origin} onChange={e => setForm({...form, origin: e.target.value})} />
@@ -476,11 +483,21 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
       <div style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#FDFBF7', borderRadius: '20px', border: '1px solid #EEE' }}>
         <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: theme.secondary, display: 'block', marginBottom: '20px', textAlign: 'center' }}>PERFIL SENSORIAL</label>
         <RadarChart data={form} size={200} />
+        
         <div style={{ marginTop: '30px' }}>
-          {[{k:'acidity',l:'Acidez'},{k:'body',l:'Corpo'},{k:'sweetness',l:'Doçura'},{k:'bitterness',l:'Amargor'},{k:'aroma',l:'Aroma'}].map(a => (
-            <div key={a.k}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', fontWeight: 'bold' }}><span>{a.l.toUpperCase()}</span><span>{form[a.k]}/5</span></div>
-              <input type="range" min="1" max="5" step="0.5" value={form[a.k]} onChange={e => setForm({...form, [a.k]: Number(e.target.value)})} style={{ width: '100%', accentColor: theme.primary, marginBottom: '15px' }} />
+          {[
+            { key: 'acidity', label: 'Acidez' },
+            { key: 'body', label: 'Corpo' },
+            { key: 'sweetness', label: 'Doçura' },
+            { key: 'bitterness', label: 'Amargor' },
+            { key: 'aroma', label: 'Aroma' }
+          ].map(attr => (
+            <div key={attr.key}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', fontWeight: 'bold' }}>
+                <span style={{ textTransform: 'uppercase' }}>{attr.label}</span>
+                <span>{form[attr.key]}/5</span>
+              </div>
+              <input type="range" min="1" max="5" step="0.5" value={form[attr.key]} onChange={e => setForm({...form, [attr.key]: Number(e.target.value)})} style={sliderStyle} />
             </div>
           ))}
         </div>
@@ -507,17 +524,21 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
       <select style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #EEE' }} value={form.brew_method} onChange={e => setForm({...form, brew_method: e.target.value})}>
         <option>Coado (V60/Melitta)</option><option>Prensa Francesa</option><option>Espresso</option><option>Aeropress</option><option>Moka</option>
       </select>
+
       <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>TORRA</label>
       <select style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #EEE' }} value={form.roast_level} onChange={e => setForm({...form, roast_level: e.target.value})}>
         <option>Clara</option><option>Média</option><option>Escura</option>
       </select>
+
       <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>NOTA GERAL (1-5)</label>
       <input type="number" min="1" max="5" style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #EEE' }} value={form.rating} onChange={e => setForm({...form, rating: e.target.value})} />
+
       <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
         <input type="checkbox" checked={form.is_favorite} onChange={e => setForm({...form, is_favorite: e.target.checked})} /> Favorito ❤️
       </label>
+      
       <button type="submit" disabled={uploading} style={{ width: '100%', background: theme.primary, color: 'white', border: 'none', padding: '15px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
-        {uploading ? 'Processando...' : 'Salvar Review'}
+        {uploading ? 'Salvando...' : 'Salvar Review'}
       </button>
     </form>
   )
