@@ -25,7 +25,6 @@ const flavorWheel = {
   "Fermentado": ["Vinho Tinto", "Whisky", "Frutas Passas", "Cerveja Artesanal"]
 };
 
-// COMPONENTE DO GRÁFICO RADAR
 function RadarChart({ data, size = 150, showLabels = true }) {
   const points = [
     { label: "Acidez", value: data.acidity || 3 },
@@ -79,7 +78,7 @@ export default function App() {
 
   useEffect(() => { fetchReviews() }, [])
 
-   function fetchReviews() {
+  async function fetchReviews() {
     const { data } = await supabase.from('reviews').select('*')
       .order('is_favorite', { ascending: false })
       .order('created_at', { ascending: false })
@@ -99,13 +98,13 @@ export default function App() {
             {activeTab === 'home' && (
               <HomeTab reviews={filteredReviews} searchTerm={searchTerm} setSearchTerm={setSearchTerm} 
                 onEdit={(r) => { setCurrentReview(r); setView('edit'); }} 
-                onDelete={ (id) => {
+                onDelete={async (id) => {
                   if(window.confirm("Excluir review?")) {
                     await supabase.from('reviews').delete().eq('id', id);
                     fetchReviews();
                   }
                 }}
-                onToggleFavorite={ (id, status) => {
+                onToggleFavorite={async (id, status) => {
                   await supabase.from('reviews').update({ is_favorite: !status }).eq('id', id);
                   fetchReviews();
                 }}
@@ -241,31 +240,31 @@ function PantryTab() {
 
   useEffect(() => { fetchPantry(); fetchWishlist(); }, []);
 
-   function fetchPantry() {
+  async function fetchPantry() {
     const { data } = await supabase.from('inventory').select('*').order('created_at', { ascending: false });
     if (data) setItems(data);
   }
 
-   function fetchWishlist() {
+  async function fetchWishlist() {
     const { data } = await supabase.from('wishlist').select('*').order('created_at', { ascending: false });
     if (data) setWishlist(data);
   }
 
-   function addInventory() {
+  async function addInventory() {
     if (!newItemName) return;
     await supabase.from('inventory').insert([{ name: newItemName, brand: '', weight_total: 250, weight_current: 250 }]);
     setNewItemName('');
     fetchPantry();
   }
 
-   function addWish() {
+  async function addWish() {
     if (!wishInput) return;
     await supabase.from('wishlist').insert([{ item_name: wishInput }]);
     setWishInput('');
     fetchWishlist();
   }
 
-   function updateWeight(id, newWeight) {
+  async function updateWeight(id, newWeight) {
     await supabase.from('inventory').update({ weight_current: Math.max(0, newWeight) }).eq('id', id);
     fetchPantry();
   }
@@ -289,8 +288,8 @@ function PantryTab() {
                 <div style={{ width: `${(item.weight_current / item.weight_total) * 100}%`, height: '100%', background: theme.secondary, borderRadius: '10px' }}></div>
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
-                <button onClick={() => updateWeight(item.id, item.weight_current - 18)} style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #EEE', background: 'none', fontSize: '0.75rem', fontWeight: '600' }}>-18g (1 dose)</button>
-                <button onClick={ () => { if(confirm("Excluir?")) { await supabase.from('inventory').delete().eq('id', item.id); fetchPantry(); } }} style={{ padding: '8px', borderRadius: '8px', border: 'none', background: '#f8d7da', color: '#721c24' }}><Trash2 size={14}/></button>
+                <button onClick={() => updateWeight(item.id, item.weight_current - 18)} style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #EEE', background: 'none', fontSize: '0.75rem', fontWeight: '600' }}>-18g (Dose padrão)</button>
+                <button onClick={async () => { if(confirm("Excluir?")) { await supabase.from('inventory').delete().eq('id', item.id); fetchPantry(); } }} style={{ padding: '8px', borderRadius: '8px', border: 'none', background: '#f8d7da', color: '#721c24' }}><Trash2 size={14}/></button>
               </div>
             </div>
           ))}
@@ -307,7 +306,7 @@ function PantryTab() {
           {wishlist.map(wish => (
             <div key={wish.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '10px 15px', borderRadius: '12px', fontSize: '0.9rem' }}>
               <span>{wish.item_name}</span>
-              <button onClick={ () => { await supabase.from('wishlist').delete().eq('id', wish.id); fetchWishlist(); }} style={{ background: 'none', border: 'none', color: theme.secondary }}><CheckCircle2 size={18}/></button>
+              <button onClick={async () => { await supabase.from('wishlist').delete().eq('id', wish.id); fetchWishlist(); }} style={{ background: 'none', border: 'none', color: theme.secondary }}><CheckCircle2 size={18}/></button>
             </div>
           ))}
         </div>
@@ -449,10 +448,17 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
     e.preventDefault();
     setUploading(true);
     
-    // Criamos uma cópia do formulário garantindo que números sejam números
-    const dataToSave = {
-      ...form,
+    // CORREÇÃO CRÍTICA: Enviar campos explicitamente para forçar o Supabase a aceitar o cache
+    const finalData = {
+      coffee_name: form.coffee_name,
+      brand: form.brand,
+      origin: form.origin,
+      brew_method: form.brew_method,
+      roast_level: form.roast_level,
       rating: Number(form.rating),
+      notes: form.notes,
+      image_url: form.image_url,
+      is_favorite: Boolean(form.is_favorite),
       acidity: Number(form.acidity),
       body: Number(form.body),
       sweetness: Number(form.sweetness),
@@ -462,12 +468,11 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
 
     try {
       const { error } = mode === 'edit' 
-        ? await supabase.from('reviews').update(dataToSave).eq('id', initialData.id) 
-        : await supabase.from('reviews').insert([dataToSave]);
+        ? await supabase.from('reviews').update(finalData).eq('id', initialData.id) 
+        : await supabase.from('reviews').insert([finalData]);
       
       if (error) {
-        // Se ainda der erro de cache, este alert nos dirá exatamente o que a API está vendo
-        console.error("Erro detalhado:", error);
+        console.error("Erro detalhado do Supabase:", error);
         alert("Erro ao salvar: " + error.message);
       } else {
         onSave();
