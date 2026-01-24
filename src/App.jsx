@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient'
 import { 
   Plus, Star, ArrowLeft, Camera, Loader2, Flame, Trash2, Edit3, Search, 
   Heart, LayoutGrid, BarChart3, Clock, Coffee, Package, ShoppingCart, 
-  CheckCircle2, Pause, Play, RotateCcw, BrainCircuit
+  CheckCircle2, Pause, Play, RotateCcw, BrainCircuit, Droplets, Scale, Timer
 } from 'lucide-react'
 
 const theme = {
@@ -76,13 +76,31 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('')
   const [currentReview, setCurrentReview] = useState(null)
 
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
   useEffect(() => { fetchReviews() }, [])
 
   async function fetchReviews() {
-    const { data } = await supabase.from('reviews').select('*')
-      .order('is_favorite', { ascending: false })
-      .order('created_at', { ascending: false })
-    if (data) setReviews(data)
+    setLoading(true)
+    setError(null)
+    try {
+      const { data, error: fetchError } = await supabase.from('reviews').select('*')
+        .order('is_favorite', { ascending: false })
+        .order('created_at', { ascending: false })
+      
+      if (fetchError) {
+        console.error('Erro ao buscar reviews:', fetchError)
+        setError(fetchError.message)
+      } else {
+        setReviews(data || [])
+      }
+    } catch (err) {
+      console.error('Erro inesperado:', err)
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const filteredReviews = reviews.filter(r => 
@@ -96,19 +114,34 @@ export default function App() {
         {view === 'list' ? (
           <>
             {activeTab === 'home' && (
-              <HomeTab reviews={filteredReviews} searchTerm={searchTerm} setSearchTerm={setSearchTerm} 
-                onEdit={(r) => { setCurrentReview(r); setView('edit'); }} 
-                onDelete={async (id) => {
-                  if(window.confirm("Excluir review?")) {
-                    await supabase.from('reviews').delete().eq('id', id);
-                    fetchReviews();
-                  }
-                }}
-                onToggleFavorite={async (id, status) => {
-                  await supabase.from('reviews').update({ is_favorite: !status }).eq('id', id);
-                  fetchReviews();
-                }}
-              />
+              <>
+                {error && (
+                  <div style={{ background: '#FEE2E2', border: '1px solid #EF4444', borderRadius: '12px', padding: '15px', marginBottom: '20px', color: '#DC2626', fontSize: '0.9rem' }}>
+                    <strong>Erro de conexão:</strong> {error}
+                    <br /><small>Verifique se as variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY estão configuradas no .env.local</small>
+                  </div>
+                )}
+                {loading ? (
+                  <div style={{ textAlign: 'center', padding: '40px', color: theme.secondary }}>
+                    <Loader2 size={32} style={{ animation: 'spin 1s linear infinite' }} />
+                    <p>Carregando...</p>
+                  </div>
+                ) : (
+                  <HomeTab reviews={filteredReviews} searchTerm={searchTerm} setSearchTerm={setSearchTerm} 
+                    onEdit={(r) => { setCurrentReview(r); setView('edit'); }} 
+                    onDelete={async (id) => {
+                      if(window.confirm("Excluir review?")) {
+                        await supabase.from('reviews').delete().eq('id', id);
+                        fetchReviews();
+                      }
+                    }}
+                    onToggleFavorite={async (id, status) => {
+                      await supabase.from('reviews').update({ is_favorite: !status }).eq('id', id);
+                      fetchReviews();
+                    }}
+                  />
+                )}
+              </>
             )}
             {activeTab === 'stats' && <StatsTab reviews={reviews} />}
             {activeTab === 'brew' && <BrewToolsTab />}
@@ -202,9 +235,19 @@ function ReviewCard({ review, onEdit, onDelete, onToggleFavorite }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <h3 style={{ margin: 0, fontSize: '1.2rem' }}>{review.coffee_name}</h3>
           <p style={{ margin: '4px 0 15px 0', color: theme.secondary, fontSize: '0.85rem' }}>{review.brand} • {review.origin}</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px', fontSize: '0.8rem', color: '#666' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px', fontSize: '0.75rem', color: '#666' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Flame size={14} color={theme.secondary}/> Torra: {review.roast_level}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Coffee size={14} color={theme.secondary}/> {review.brew_method}</div>
+            {(review.water_amount || review.ratio || review.grind_size || review.brew_time) && (
+              <div style={{ marginTop: '8px', padding: '8px', background: '#F5F9FF', borderRadius: '8px', fontSize: '0.7rem' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {review.water_amount && <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><Droplets size={11} color={theme.secondary}/> {review.water_amount}ml</span>}
+                  {review.ratio && <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><Scale size={11} color={theme.secondary}/> {review.ratio}</span>}
+                  {review.grind_size && <span>Moagem: {review.grind_size}</span>}
+                  {review.brew_time && <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><Timer size={11} color={theme.secondary}/> {review.brew_time}</span>}
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <div style={{ marginLeft: '10px', opacity: 0.8, flexShrink: 0 }}>
@@ -418,7 +461,8 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
     coffee_name: '', brand: '', origin: '', brew_method: 'Coado (V60/Melitta)', 
     roast_level: 'Média', rating: 5, notes: '', image_url: '', 
     acidity: 3, body: 3, sweetness: 3, bitterness: 2, aroma: 4, 
-    is_favorite: false 
+    is_favorite: false,
+    water_amount: '', ratio: '', grind_size: 'Média', brew_time: ''
   })
   
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -463,7 +507,11 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
       body: Number(form.body),
       sweetness: Number(form.sweetness),
       bitterness: Number(form.bitterness),
-      aroma: Number(form.aroma)
+      aroma: Number(form.aroma),
+      water_amount: form.water_amount ? Number(form.water_amount) : null,
+      ratio: form.ratio || null,
+      grind_size: form.grind_size || null,
+      brew_time: form.brew_time || null
     };
 
     try {
@@ -548,6 +596,69 @@ function ReviewForm({ mode, initialData, onSave, onCancel }) {
       <select style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #EEE' }} value={form.roast_level} onChange={e => setForm({...form, roast_level: e.target.value})}>
         <option>Clara</option><option>Média</option><option>Escura</option>
       </select>
+
+      <div style={{ marginBottom: '20px', padding: '15px', background: '#F0F7FF', borderRadius: '15px', border: '1px solid #D0E3FF' }}>
+        <label style={{ fontSize: '0.75rem', color: theme.primary, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '15px' }}>
+          <Coffee size={16} /> DADOS DA EXTRAÇÃO
+        </label>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+          <div>
+            <label style={{ fontSize: '0.65rem', color: theme.secondary, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Droplets size={12} /> ÁGUA (ml)
+            </label>
+            <input 
+              type="number" 
+              placeholder="250" 
+              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #EEE', marginTop: '4px', boxSizing: 'border-box' }} 
+              value={form.water_amount || ''} 
+              onChange={e => setForm({...form, water_amount: e.target.value})} 
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: '0.65rem', color: theme.secondary, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Scale size={12} /> PROPORÇÃO
+            </label>
+            <input 
+              type="text" 
+              placeholder="1:15" 
+              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #EEE', marginTop: '4px', boxSizing: 'border-box' }} 
+              value={form.ratio || ''} 
+              onChange={e => setForm({...form, ratio: e.target.value})} 
+            />
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <div>
+            <label style={{ fontSize: '0.65rem', color: theme.secondary, fontWeight: 'bold' }}>MOAGEM</label>
+            <select 
+              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #EEE', marginTop: '4px', boxSizing: 'border-box' }} 
+              value={form.grind_size || 'Média'} 
+              onChange={e => setForm({...form, grind_size: e.target.value})}
+            >
+              <option>Extra Fina</option>
+              <option>Fina</option>
+              <option>Média-Fina</option>
+              <option>Média</option>
+              <option>Média-Grossa</option>
+              <option>Grossa</option>
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: '0.65rem', color: theme.secondary, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Timer size={12} /> TEMPO
+            </label>
+            <input 
+              type="text" 
+              placeholder="3:30" 
+              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #EEE', marginTop: '4px', boxSizing: 'border-box' }} 
+              value={form.brew_time || ''} 
+              onChange={e => setForm({...form, brew_time: e.target.value})} 
+            />
+          </div>
+        </div>
+      </div>
 
       <label style={{ fontSize: '0.7rem', color: theme.secondary, fontWeight: 'bold' }}>NOTA GERAL (1-5)</label>
       <input type="number" min="1" max="5" style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '10px', border: '1px solid #EEE' }} value={form.rating} onChange={e => setForm({...form, rating: e.target.value})} />
